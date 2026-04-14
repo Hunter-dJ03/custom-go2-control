@@ -1,0 +1,10 @@
+builtin_interfaces/Time stamp
+go2_interfaces/MotionState motion
+float32 battery_percentage
+float32 battery_voltage
+float32 battery_current
+float32[12] motor_temperatures
+float32 imu_temperature
+uint32 error_code
+bool has_fault
+bool is_connected

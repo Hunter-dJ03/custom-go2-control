@@ -1,0 +1,6 @@
+control_arbiter:
+  ros__parameters:
+    max_linear_velocity_x: 1.0
+    max_linear_velocity_y: 0.5
+    max_angular_velocity: 1.5
+    command_timeout_ms: 500

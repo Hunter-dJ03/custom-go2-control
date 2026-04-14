@@ -1,0 +1,6 @@
+motion_node:
+  ros__parameters:
+    default_gait: 1
+    default_body_height: 0.32
+    heartbeat_interval_ms: 1000
+    enable_obstacle_avoidance: false

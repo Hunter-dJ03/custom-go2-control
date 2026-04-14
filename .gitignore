@@ -1,0 +1,34 @@
+build/
+install/
+log/
+.colcon/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Vendor venvs
+src/vendor/go2_ros2_sdk/.venv/
+
+# Vendor symlinks (machine-specific paths)
+src/vendor/unitree_go
+src/vendor/unitree_api
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ROS bags
+*.bag
+*.db3
+*.mcap
+
+# Build artifacts
+*.o
+*.so
+*.a

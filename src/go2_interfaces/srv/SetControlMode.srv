@@ -1,0 +1,7 @@
+uint8 mode
+uint8 MODE_TELEOP=0
+uint8 MODE_AUTONOMOUS=1
+uint8 MODE_SCRIPTED=2
+---
+bool success
+string message

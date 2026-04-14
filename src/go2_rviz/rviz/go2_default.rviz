@@ -1,0 +1,42 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/RobotModel
+      Name: RobotModel
+      Enabled: true
+      Description Topic:
+        Value: /robot_description
+    - Class: rviz_default_plugins/TF
+      Name: TF
+      Enabled: true
+    - Class: rviz_default_plugins/PointCloud2
+      Name: LiDAR
+      Enabled: true
+      Topic:
+        Value: /go2/lidar/points
+    - Class: rviz_default_plugins/Image
+      Name: FrontCamera
+      Enabled: true
+      Topic:
+        Value: /go2/camera/front/image_raw
+    - Class: rviz_default_plugins/Odometry
+      Name: Odometry
+      Enabled: true
+      Topic:
+        Value: /go2/odom
+  Global Options:
+    Fixed Frame: odom
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/Measure
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 5
+      Name: Current View

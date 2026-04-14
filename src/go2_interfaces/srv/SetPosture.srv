@@ -1,0 +1,11 @@
+uint8 posture
+uint8 POSTURE_STAND_UP=0
+uint8 POSTURE_STAND_DOWN=1
+uint8 POSTURE_DAMP=2
+uint8 POSTURE_BALANCE_STAND=3
+uint8 POSTURE_RECOVERY_STAND=4
+uint8 POSTURE_SIT=5
+uint8 POSTURE_RISE_SIT=6
+---
+bool success
+string message

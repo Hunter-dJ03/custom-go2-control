@@ -1,0 +1,9 @@
+uint8 gait_type
+uint8 GAIT_IDLE=0
+uint8 GAIT_TROT=1
+uint8 GAIT_RUN=2
+uint8 GAIT_CLIMB_STAIR=3
+uint8 GAIT_FORWARD_DOWN_STAIR=4
+---
+bool success
+string message

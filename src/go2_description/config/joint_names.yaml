@@ -1,0 +1,13 @@
+joint_names:
+  - FR_hip_joint    # motor 0
+  - FR_thigh_joint  # motor 1
+  - FR_calf_joint   # motor 2
+  - FL_hip_joint    # motor 3
+  - FL_thigh_joint  # motor 4
+  - FL_calf_joint   # motor 5
+  - RR_hip_joint    # motor 6
+  - RR_thigh_joint  # motor 7
+  - RR_calf_joint   # motor 8
+  - RL_hip_joint    # motor 9
+  - RL_thigh_joint  # motor 10
+  - RL_calf_joint   # motor 11
