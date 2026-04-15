@@ -5,6 +5,8 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /TF1/Frames1
+        - /FrontCamera1
+        - /FrontCamera1/Topic1
       Splitter Ratio: 0.5
     Tree Height: 292
   - Class: rviz_common/Views
@@ -371,8 +373,8 @@ Visualization Manager:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /go2/camera/front/image_raw
+        Reliability Policy: Best Effort
+        Value: /go2/front_camera/image_raw
       Value: true
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
@@ -431,7 +433,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 4.025343418121338
+      Distance: 8.294028282165527
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
