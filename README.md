@@ -120,7 +120,14 @@ source ~/go2_ws/setup_env.bash
 # Verify robot connectivity (should list DDS topics)
 ros2 topic list
 
-# Launch the full onboard stack
+# Phase 1: robot model + DDS bridge (typical bringup)
+ros2 launch go2_bringup phase1.launch.py
+
+# Or run pieces separately:
+# ros2 launch go2_description description.launch.py
+# ros2 launch go2_bringup bridge.launch.py
+
+# Launch the full onboard stack (placeholder)
 ros2 launch go2_bringup robot.launch.py
 
 # Launch the base station (on laptop)

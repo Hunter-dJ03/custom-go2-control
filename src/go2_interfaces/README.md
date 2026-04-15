@@ -33,7 +33,7 @@ instead of depending on vendor types directly.
 | `GetCapabilities` | — | string[] available, string[] unavailable | Query motion capabilities |
 | `SetArbitrationSource` | uint8 source | bool success | Switch command source |
 | `EStop` | bool engage | bool success | Emergency stop |
-| `SportApiCall` | int32 api_id, string parameter_json | bool success, string response_json | Generic sport API pass-through |
+| `SportApiCall` | int64 api_id, string parameter_json | bool success, string message | Fire-and-forget `/api/sport/request` wrapper |
 
 ## Actions
 

@@ -1,51 +1,40 @@
 # go2_description
 
-Robot model (URDF/Xacro), meshes, and robot_state_publisher launch.
+Robot model (URDF/Xacro), meshes, and kinematic configuration for the Unitree Go2.
 
-## Layer
+## Source of the model
 
-6 — Description & Simulation
-
-## Purpose
-
-Defines the physical model of the Go2 for TF tree generation and
-visualization. Following the kanga_description two-layer xacro pattern:
-macro files define components, assembly files compose them.
+At **build** time, CMake reads
+`../vendor/go2_ros2_sdk/go2_robot_sdk/urdf/go2.urdf` and the `dae/` meshes from
+the same tree, rewrites mesh URLs to `package://go2_description/meshes/`, and
+installs the result as `share/go2_description/urdf/go2.urdf.xacro` plus the
+`.dae` files under `share/go2_description/meshes/`. Create the vendor symlink
+first (see `src/vendor/README.md`).
 
 ## Structure
 
 ```
 go2_description/
+├── launch/
+│   └── description.launch.py      ← robot_state_publisher + URDF
 ├── urdf/
-│   ├── go2_macro.urdf.xacro       ← body + 4 legs (12 joints, visual only)
-│   ├── go2.urdf.xacro             ← full assembly with sensors
-│   ├── sensors/
-│   │   ├── lidar.urdf.xacro       ← Unitree L2 mount
-│   │   ├── front_camera.urdf.xacro
-│   │   └── zed.urdf.xacro         ← ZED camera mount
-│   └── payloads/
-│       └── orin_payload.urdf.xacro
-├── meshes/                         ← visual meshes (.dae or .stl)
+│   └── README.txt                 ← points to CMake-generated install artifact
 ├── config/
 │   └── joint_names.yaml
-├── launch/
-│   └── rsp.launch.py              ← robot_state_publisher
-└── rviz/
-    └── go2.rviz                   ← default RViz config
+└── CMakeLists.txt                 ← generates URDF + installs meshes from vendor
+```
+
+Launch the model alone:
+
+```bash
+ros2 launch go2_description description.launch.py
 ```
 
 ## Key frames
 
-`base_link`, `imu_link`, `lidar_link`, `front_camera_link`,
-`zed_camera_link`, `FL_hip`, `FL_thigh`, `FL_calf`, `FL_foot`, etc.
-
-## Notes
-
-- No transmissions defined (we do not do low-level motor control)
-- Joint states come from `/go2/joint_states` published by go2_bridge
-- Static sensor transforms defined in URDF
+Includes the full SolidWorks-exported tree from go2_ros2_sdk (`base_link`,
+`odom`, `map`, leg links, `imu_link`, cameras, etc. as defined upstream).
 
 ## Dependencies
 
-- `robot_state_publisher`, `xacro`, `joint_state_publisher`
-- `urdf`
+`robot_state_publisher`, `xacro`, `joint_state_publisher`, `urdf`

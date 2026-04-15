@@ -699,7 +699,8 @@ Following the `kanga_bringup` pattern: thin orchestration layer.
 go2_bringup/
 ├── launch/
 │   ├── robot.launch.py           ← full onboard stack
-│   ├── bridge.launch.py          ← bridge + state only (testing)
+│   ├── phase1.launch.py          ← description + bridge
+│   ├── bridge.launch.py          ← DDS bridge only
 │   ├── navigation.launch.py      ← SLAM + Nav2
 │   └── sensors.launch.py         ← LiDAR + cameras
 ├── config/
@@ -969,7 +970,7 @@ map ──► odom ──► base_link ──┬──► imu_link
 | `go2_interfaces` | Core message/service/action definitions |
 | `go2_bridge` | Odom, IMU, joint states, TF, sport_api_call service |
 | `go2_description` | Basic URDF, RSP launch |
-| `go2_bringup` | `bridge.launch.py` |
+| `go2_bringup` | `phase1.launch.py` (description + bridge) |
 
 **Validation:** `ros2 topic echo /go2/odom`, TF visible in RViz,
 robot model displayed with live joint positions.

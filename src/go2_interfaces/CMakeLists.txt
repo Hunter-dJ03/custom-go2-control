@@ -26,6 +26,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GetCapabilities.srv"
   "srv/SetControlMode.srv"
   "srv/EStop.srv"
+  "srv/SportApiCall.srv"
   "action/ExecuteMotion.action"
   DEPENDENCIES builtin_interfaces std_msgs
 )

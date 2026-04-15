@@ -17,11 +17,12 @@ deployment configuration.
 ```
 go2_bringup/
 ├── launch/
-│   ├── robot.launch.py         ← full onboard stack
-│   ├── bridge.launch.py        ← bridge + state only (testing)
-│   ├── control.launch.py       ← motion + arbitration
-│   ├── sensors.launch.py       ← LiDAR + cameras
-│   └── navigation.launch.py   ← SLAM + Nav2
+│   ├── robot.launch.py         ← full onboard stack (placeholder)
+│   ├── phase1.launch.py        ← description + bridge (typical Phase 1)
+│   ├── bridge.launch.py        ← DDS bridge only
+│   ├── base_station.launch.py
+│   ├── sensors.launch.py
+│   └── teleop.launch.py
 ├── config/
 │   ├── bridge_params.yaml
 │   ├── motion_params.yaml
@@ -34,16 +35,19 @@ go2_bringup/
 ## Usage
 
 ```bash
-# Source environment
-source ~/unitree_ws/setup_env.bash
+# Source environment (Humble + unitree_ros2 + this workspace)
+source ~/go2_ws/setup_env.bash
 
-# Full stack
-ros2 launch go2_bringup robot.launch.py
+# Phase 1: go2_description (RSP) + go2_bridge
+ros2 launch go2_bringup phase1.launch.py
 
-# Bridge only (testing)
+# DDS bridge only (e.g. with description launched elsewhere)
 ros2 launch go2_bringup bridge.launch.py
+
+# Full stack (placeholder)
+ros2 launch go2_bringup robot.launch.py
 ```
 
 ## Dependencies (exec_depend)
 
-All `go2_*` packages.
+`go2_bridge`, `go2_description`, `robot_state_publisher`, `launch_ros`.

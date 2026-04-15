@@ -9,12 +9,10 @@ __pycache__/
 *.pyo
 *.egg-info/
 
-# Vendor venvs
-src/vendor/go2_ros2_sdk/.venv/
-
 # Vendor symlinks (machine-specific paths)
 src/vendor/unitree_go
 src/vendor/unitree_api
+src/vendor/go2_ros2_sdk
 
 # IDE
 .vscode/

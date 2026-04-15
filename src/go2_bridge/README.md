@@ -27,26 +27,24 @@ Contains **zero business logic** — pure transport and data conversion.
 
 **Published topics:**
 
-| Topic | Type | Rate | Source |
-|-------|------|------|--------|
-| `/go2/odom` | nav_msgs/Odometry | 50 Hz | sportmodestate |
-| `/go2/imu/data` | sensor_msgs/Imu | 50 Hz | sportmodestate/lowstate IMU |
-| `/go2/joint_states` | sensor_msgs/JointState | 50 Hz | lowstate motor_state |
-| `/go2/foot_force` | go2_interfaces/FootForce | 50 Hz | lowstate foot_force |
-| `/go2/battery` | sensor_msgs/BatteryState | 2 Hz | lf/lowstate |
-| `/go2/motion/raw_state` | go2_interfaces/MotionState | 50 Hz | sportmodestate |
-| `/go2/lidar/points` | sensor_msgs/PointCloud2 | 10 Hz | utlidar/cloud |
-| `/go2/front_camera/image_raw` | sensor_msgs/Image | 30 Hz | frontvideostream |
-| `/go2/joy` | sensor_msgs/Joy | event | /wirelesscontroller |
+| Topic | Type | Source |
+|-------|------|--------|
+| `/go2/odom` | nav_msgs/Odometry | `/sportmodestate` |
+| `/go2/imu` | sensor_msgs/Imu | `/lowstate` |
+| `/go2/joint_states` | sensor_msgs/JointState | `/lowstate` motor_state[0..11] |
+| `/go2/battery` | sensor_msgs/BatteryState | `/lowstate` BMS (throttled) |
 
-**TF:** odom → base_link
+Planned (not implemented in this node yet): foot_force, motion raw_state, lidar relay, camera decode, joy.
+
+**TF:** `odom` → `base_link`
 
 **Services:**
 
 | Service | Type | Purpose |
 |---------|------|---------|
-| `/go2/bridge/sport_api_call` | SportApiCall | Send sport API commands to robot |
-| `/go2/bridge/robot_state_call` | SportApiCall | Query robot state services |
+| `/go2/sport_api_call` | go2_interfaces/SportApiCall | Publish to `/api/sport/request` (fire-and-forget) |
+
+**Parameters:** `odom_frame`, `base_frame`, `sport_mode_state_topic`, `low_state_topic`
 
 ## Safety
 

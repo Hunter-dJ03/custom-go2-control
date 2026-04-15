@@ -1,0 +1,6 @@
+# Fire-and-forget Sport API call (maps to unitree_api/Request on /api/sport/request).
+int64 api_id
+string parameter_json
+---
+bool success
+string message
