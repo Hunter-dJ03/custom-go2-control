@@ -1,0 +1,8 @@
+# Advertise every ROS topic the bridge discovers (no filtering). Heavy on busy robots.
+foxglove_bridge:
+  ros__parameters:
+    port: 8765
+    address: "0.0.0.0"
+    topic_whitelist:
+      - ".*"
+    max_qos_depth: 50

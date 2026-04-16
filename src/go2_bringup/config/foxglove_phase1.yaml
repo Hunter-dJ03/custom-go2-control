@@ -1,0 +1,23 @@
+# foxglove_bridge parameters for Phase 1 (go2_default.rviz parity).
+# Use a YAML string array so topic_whitelist is not mangled by launch/XML substitution.
+foxglove_bridge:
+  ros__parameters:
+    port: 8765
+    address: "0.0.0.0"
+    # foxglove_bridge uses std::regex_match (full-string match), not search — use .* for trees.
+    topic_whitelist:
+      - "^/robot_description$"
+      - "^/tf$"
+      - "^/tf_static$"
+      - "^/go2/.*"
+      - "^/utlidar/cloud_base$"
+      - "^/utlidar/cloud_deskewed$"
+      - "^/sportmodestate$"
+      - "^/lowstate$"
+      - "^/lf/sportmodestate$"
+      - "^/lf/lowstate$"
+      - "^/lf/battery_alarm$"
+      - "^/rosout$"
+      - "^/parameter_events$"
+    # Default upstream is 10; /tf often uses depth 300 (see bridge WARN).
+    max_qos_depth: 50

@@ -1,4 +1,4 @@
-"""Phase 1: robot model (go2_description) + Unitree bridge + optional RViz."""
+"""Phase 1: robot model (go2_description) + Unitree bridge + Foxglove bridge and/or RViz."""
 
 import os
 
@@ -12,8 +12,29 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    foxglove_arg = DeclareLaunchArgument(
+        'foxglove',
+        default_value='true',
+        description='Launch foxglove_bridge for Foxglove Studio (WebSocket)',
+    )
+    foxglove_port_arg = DeclareLaunchArgument(
+        'foxglove_port',
+        default_value='8765',
+        description='Foxglove WebSocket port (Studio default connection)',
+    )
+    foxglove_params_file_arg = DeclareLaunchArgument(
+        'foxglove_params_file',
+        default_value=os.path.join(
+            get_package_share_directory('go2_bringup'),
+            'config',
+            'foxglove_phase1.yaml',
+        ),
+        description='foxglove_bridge YAML (topic_whitelist); default matches go2_default.rviz',
+    )
     rviz_arg = DeclareLaunchArgument(
-        'rviz', default_value='true', description='Launch RViz2 with go2_default config',
+        'rviz',
+        default_value='false',
+        description='Launch RViz2 with go2_default config',
     )
     sensors_arg = DeclareLaunchArgument(
         'sensors',
@@ -71,6 +92,11 @@ def generate_launch_description():
         'launch',
         'localization.launch.py',
     )
+    foxglove_launch = os.path.join(
+        get_package_share_directory('go2_bringup'),
+        'launch',
+        'foxglove_bridge.launch.py',
+    )
     rviz_config = os.path.join(
         get_package_share_directory('go2_rviz'),
         'rviz',
@@ -88,6 +114,9 @@ def generate_launch_description():
 
     return LaunchDescription(
         [
+            foxglove_arg,
+            foxglove_port_arg,
+            foxglove_params_file_arg,
             rviz_arg,
             sensors_arg,
             front_camera_arg,
@@ -108,6 +137,14 @@ def generate_launch_description():
                     'path_history_seconds': LaunchConfiguration('path_history_seconds'),
                     'path_odom_stride': LaunchConfiguration('path_odom_stride'),
                 }.items(),
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(foxglove_launch),
+                launch_arguments={
+                    'port': LaunchConfiguration('foxglove_port'),
+                    'params_file': LaunchConfiguration('foxglove_params_file'),
+                }.items(),
+                condition=IfCondition(LaunchConfiguration('foxglove')),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(sensors_launch),

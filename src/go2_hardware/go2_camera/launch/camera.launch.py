@@ -39,6 +39,7 @@ def generate_launch_description():
                 remappings=[
                     ("~/image_raw", "/go2/front_camera/image_raw"),
                     ("~/image_raw/compressed", "/go2/front_camera/image_raw/compressed"),
+                    ("~/camera_info", "/go2/front_camera/camera_info"),
                 ],
                 output="screen",
             ),
