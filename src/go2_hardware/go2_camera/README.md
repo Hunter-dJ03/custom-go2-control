@@ -15,11 +15,28 @@ ROS 2 topics.
 ## How it works
 
 The Go2 MCU streams H.264 video over UDP multicast at `230.1.1.1:1720` on
-the robot's Ethernet interface. This node uses OpenCV's GStreamer backend to
-receive, decode, and convert frames to BGR, then publishes them as standard
-ROS 2 image messages.
+the robot's Ethernet interface. The node builds a GStreamer pipeline (decode
+to BGR in `appsink`), then publishes `sensor_msgs/Image` via `cv_bridge` and
+optional JPEG `CompressedImage` via OpenCV `imencode`.
 
 Reference: https://support.unitree.com/home/en/developer/Multimedia_Services
+
+## TODO — when deploying on Orin (onboard autonomy priority)
+
+Base station is for monitoring only; optimize the NVIDIA side for perception
+and control headroom.
+
+- [ ] **Hardware H.264 decode** — Replace `avdec_h264` with a Jetson hardware
+  decoder (e.g. `nvv4l2decoder`; exact element depends on JetPack/GStreamer)
+  to cut CPU use versus software decode.
+- [ ] **Frame pump from GStreamer** — Drive publishing from `appsink` (callback
+  or blocking pull) instead of a wall timer + `try_pull_sample(0)` so decoded
+  frames are not dropped by timing.
+- [ ] **Limit full-rate raw fan-out** — Keep full BGR `image_raw` for onboard
+  consumers that need it; use compressed or a capped **preview rate** for RViz /
+  Wi‑Fi to the base station.
+- [ ] **Isolate load from control** — Consider process/thread priority or cgroup
+  CPU so camera/perception spikes do not starve `go2_bridge` or the controller.
 
 ## Nodes
 

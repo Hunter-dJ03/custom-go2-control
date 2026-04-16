@@ -15,6 +15,31 @@ def generate_launch_description():
     rviz_arg = DeclareLaunchArgument(
         'rviz', default_value='true', description='Launch RViz2 with go2_default config',
     )
+    sensors_arg = DeclareLaunchArgument(
+        'sensors',
+        default_value='true',
+        description='Include sensors.launch.py (front camera, etc.)',
+    )
+    front_camera_arg = DeclareLaunchArgument(
+        'front_camera',
+        default_value='true',
+        description='Start go2_camera when sensors is enabled',
+    )
+    network_interface_arg = DeclareLaunchArgument(
+        'network_interface',
+        default_value='enp2s0',
+        description='Interface for Go2 camera multicast (sensors)',
+    )
+    target_fps_arg = DeclareLaunchArgument(
+        'target_fps',
+        default_value='30',
+        description='Camera rate when sensors are enabled',
+    )
+    jpeg_quality_arg = DeclareLaunchArgument(
+        'jpeg_quality',
+        default_value='80',
+        description='JPEG quality for compressed camera topic',
+    )
 
     desc_launch = os.path.join(
         get_package_share_directory('go2_description'),
@@ -25,6 +50,11 @@ def generate_launch_description():
         get_package_share_directory('go2_bringup'),
         'launch',
         'bridge.launch.py',
+    )
+    sensors_launch = os.path.join(
+        get_package_share_directory('go2_bringup'),
+        'launch',
+        'sensors.launch.py',
     )
     rviz_config = os.path.join(
         get_package_share_directory('go2_rviz'),
@@ -44,11 +74,26 @@ def generate_launch_description():
     return LaunchDescription(
         [
             rviz_arg,
+            sensors_arg,
+            front_camera_arg,
+            network_interface_arg,
+            target_fps_arg,
+            jpeg_quality_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(desc_launch),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(bridge_launch),
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(sensors_launch),
+                launch_arguments={
+                    'front_camera': LaunchConfiguration('front_camera'),
+                    'network_interface': LaunchConfiguration('network_interface'),
+                    'target_fps': LaunchConfiguration('target_fps'),
+                    'jpeg_quality': LaunchConfiguration('jpeg_quality'),
+                }.items(),
+                condition=IfCondition(LaunchConfiguration('sensors')),
             ),
             rviz_node,
         ]

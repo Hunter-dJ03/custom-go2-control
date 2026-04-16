@@ -17,7 +17,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "target_fps",
                 default_value="30",
-                description="Target publishing frame rate",
+                description=Target publishing frame rate",
             ),
             DeclareLaunchArgument(
                 "jpeg_quality",
