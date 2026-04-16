@@ -15,6 +15,7 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "tf2_ros/transform_broadcaster.h"
 #include "unitree_api/msg/request.hpp"
+#include "unitree_api/msg/response.hpp"
 #include "unitree_go/msg/low_state.hpp"
 #include "unitree_go/msg/sport_mode_state.hpp"
 
@@ -59,6 +60,10 @@ class Go2BridgeNode : public rclcpp::Node {
     low_sub_ = create_subscription<unitree_go::msg::LowState>(
         low_topic_, rclcpp::SensorDataQoS(),
         std::bind(&Go2BridgeNode::onLowState, this, std::placeholders::_1));
+
+    sport_resp_sub_ = create_subscription<unitree_api::msg::Response>(
+        "/api/sport/response", rclcpp::QoS(10),
+        std::bind(&Go2BridgeNode::onSportResponse, this, std::placeholders::_1));
 
     RCLCPP_INFO(get_logger(), "go2_bridge_node listening on %s, %s", sport_topic_.c_str(),
                 low_topic_.c_str());
@@ -159,6 +164,15 @@ class Go2BridgeNode : public rclcpp::Node {
     }
   }
 
+  void onSportResponse(const unitree_api::msg::Response::SharedPtr msg) {
+    const int32_t api = static_cast<int32_t>(msg->header.identity.api_id);
+    const int32_t code = msg->header.status.code;
+    RCLCPP_INFO_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "/api/sport/response: api_id=%d status.code=%d (data prefix: %.80s)", api, code,
+        msg->data.c_str());
+  }
+
   void onSportApiCall(const std::shared_ptr<go2_interfaces::srv::SportApiCall::Request> req,
                       std::shared_ptr<go2_interfaces::srv::SportApiCall::Response> res) {
     unitree_api::msg::Request ureq;
@@ -186,6 +200,7 @@ class Go2BridgeNode : public rclcpp::Node {
   rclcpp::Service<go2_interfaces::srv::SportApiCall>::SharedPtr sport_srv_;
   rclcpp::Subscription<unitree_go::msg::SportModeState>::SharedPtr sport_sub_;
   rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr low_sub_;
+  rclcpp::Subscription<unitree_api::msg::Response>::SharedPtr sport_resp_sub_;
 
   std::string odom_frame_;
   std::string base_frame_;

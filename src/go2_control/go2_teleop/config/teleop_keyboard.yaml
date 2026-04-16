@@ -1,0 +1,21 @@
+# Keyboard teleop + cmd_vel_to_sport defaults (Twist uses SI: m/s, rad/s).
+go2_keyboard_teleop:
+  ros__parameters:
+    cmd_vel_topic: "/go2/teleop/cmd_vel"
+    publish_rate_hz: 20.0
+    # > Linux key-repeat initial delay so we do not publish zeros while a key is held
+    command_timeout_sec: 0.65
+    max_linear_velocity_x: 0.4
+    max_linear_velocity_y: 0.35
+    max_angular_velocity_z: 1.0
+
+cmd_vel_to_sport_node:
+  ros__parameters:
+    cmd_vel_topic: "/go2/teleop/cmd_vel"
+    send_rate_hz: 50.0
+    command_timeout_sec: 0.65
+    zero_velocity_debounce_sec: 0.12
+    max_linear_velocity_x: 0.5
+    max_linear_velocity_y: 0.5
+    max_angular_velocity_z: 1.5
+    log_every_n_moves: 0
