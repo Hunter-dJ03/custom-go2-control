@@ -45,6 +45,11 @@ def generate_launch_description():
         default_value='120.0',
         description='Sliding window (seconds) for /go2/path odometry trail',
     )
+    path_odom_stride_arg = DeclareLaunchArgument(
+        'path_odom_stride',
+        default_value='15',
+        description='Append to /go2/path every Nth odometry message',
+    )
 
     desc_launch = os.path.join(
         get_package_share_directory('go2_description'),
@@ -90,6 +95,7 @@ def generate_launch_description():
             target_fps_arg,
             jpeg_quality_arg,
             path_history_arg,
+            path_odom_stride_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(desc_launch),
             ),
@@ -100,6 +106,7 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(localization_launch),
                 launch_arguments={
                     'path_history_seconds': LaunchConfiguration('path_history_seconds'),
+                    'path_odom_stride': LaunchConfiguration('path_odom_stride'),
                 }.items(),
             ),
             IncludeLaunchDescription(

@@ -47,9 +47,11 @@ Fully custom implementation running on the AGX Orin.
 
 **`map_odom_tf_node` parameters:** `map_frame` (default `map`), `odom_frame` (default `odom`).
 
-**`odom_path_history_node` parameters:** `odom_topic`, `path_topic`, `path_history_seconds` (default `120.0`), `max_path_poses` (default `50000`, safety cap).
+**`odom_path_history_node` parameters:** `odom_topic`, `path_topic`, `path_history_seconds` (default `120.0`), `max_path_poses` (default `50000`, safety cap), `path_odom_stride` (default `15` — append only every Nth odometry message; `1` = every message). **`/go2/path` is published only when a pose is appended** (after stride), not on every odometry callback; the path publisher uses a shallow QoS history to limit backlog.
 
-**Launch:** `localization.launch.py` accepts `path_history_seconds` (e.g. `ros2 launch go2_localisation localization.launch.py path_history_seconds:=30.0`).
+**Launch:** `localization.launch.py` and `phase1.launch.py` accept `path_history_seconds` and `path_odom_stride` (e.g. `path_odom_stride:=10`).
+
+**Note:** Time-based pruning of old poses still runs every odometry message, but RViz will not see those removals until the next publish (next append). If the robot is stationary for a long time, the drawn trail may lag until motion resumes; use `path_odom_stride:=1` or add a separate publish-on-prune mode if you need that.
 
 ## Candidate implementations
 
