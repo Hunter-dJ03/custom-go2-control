@@ -40,6 +40,11 @@ def generate_launch_description():
         default_value='80',
         description='JPEG quality for compressed camera topic',
     )
+    path_history_arg = DeclareLaunchArgument(
+        'path_history_seconds',
+        default_value='120.0',
+        description='Sliding window (seconds) for /go2/path odometry trail',
+    )
 
     desc_launch = os.path.join(
         get_package_share_directory('go2_description'),
@@ -55,6 +60,11 @@ def generate_launch_description():
         get_package_share_directory('go2_bringup'),
         'launch',
         'sensors.launch.py',
+    )
+    localization_launch = os.path.join(
+        get_package_share_directory('go2_localisation'),
+        'launch',
+        'localization.launch.py',
     )
     rviz_config = os.path.join(
         get_package_share_directory('go2_rviz'),
@@ -79,11 +89,18 @@ def generate_launch_description():
             network_interface_arg,
             target_fps_arg,
             jpeg_quality_arg,
+            path_history_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(desc_launch),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(bridge_launch),
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(localization_launch),
+                launch_arguments={
+                    'path_history_seconds': LaunchConfiguration('path_history_seconds'),
+                }.items(),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(sensors_launch),

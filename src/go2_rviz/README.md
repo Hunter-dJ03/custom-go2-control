@@ -6,7 +6,7 @@ Visualization configuration files for RViz2 and Foxglove.
 
 | Config | Fixed Frame | Displays |
 |--------|-------------|----------|
-| `go2_default.rviz` | `odom` | RobotModel, TF, PointCloud2 (LiDAR), Image (front camera), Odometry |
+| `go2_default.rviz` | `map` | RobotModel, TF, PointCloud2 (LiDAR), Image (front camera), Odometry |
 | `go2_nav.rviz` | `map` | RobotModel, TF, Map, Path, LaserScan, Odometry |
 
 ## Usage
