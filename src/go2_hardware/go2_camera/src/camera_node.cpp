@@ -60,54 +60,74 @@ class CameraNode : public rclcpp::Node {
     RCLCPP_INFO(get_logger(),
                 "Go2 camera node starting — multicast %s:%ld on %s, target %ld fps",
                 multicast_addr_.c_str(), multicast_port_, iface_.c_str(), target_fps_);
+    RCLCPP_INFO(get_logger(), "Camera node build marker: fallback-pipeline-v2");
   }
 
   ~CameraNode() override { closePipeline(); }
 
  private:
   bool openPipeline() {
-    std::string pipeline_str =
+    const std::string src_prefix =
         "udpsrc address=" + multicast_addr_ +
         " port=" + std::to_string(multicast_port_) +
         " multicast-iface=" + iface_ +
         " ! application/x-rtp,media=video,encoding-name=H264"
-        " ! rtph264depay ! h264parse ! avdec_h264"
-        " ! videoconvert ! video/x-raw,format=BGR"
-        " ! appsink name=sink drop=true max-buffers=1";
+        " ! rtph264depay ";
 
-    RCLCPP_INFO(get_logger(), "Opening GStreamer pipeline: %s", pipeline_str.c_str());
+    const std::vector<std::string> decode_chains = {
+        "h264parse ! avdec_h264",
+        "avdec_h264",
+        "h264parse ! nvv4l2decoder ! nvvidconv",
+        "nvv4l2decoder ! nvvidconv"};
 
-    GError *err = nullptr;
-    pipeline_ = gst_parse_launch(pipeline_str.c_str(), &err);
-    if (err) {
-      RCLCPP_ERROR(get_logger(), "Failed to parse pipeline: %s", err->message);
-      g_error_free(err);
-      return false;
+    for (const auto &decode_chain : decode_chains) {
+      std::string pipeline_str = src_prefix + " ! " + decode_chain +
+                                 " ! videoconvert ! video/x-raw,format=BGR"
+                                 " ! appsink name=sink drop=true max-buffers=1";
+
+      RCLCPP_INFO(get_logger(), "Opening GStreamer pipeline: %s", pipeline_str.c_str());
+
+      GError *err = nullptr;
+      GstElement *candidate = gst_parse_launch(pipeline_str.c_str(), &err);
+      if (err) {
+        RCLCPP_WARN(get_logger(), "Pipeline parse failed for '%s': %s",
+                    decode_chain.c_str(), err->message);
+        g_error_free(err);
+        continue;
+      }
+
+      GstElement *sink = gst_bin_get_by_name(GST_BIN(candidate), "sink");
+      if (!sink) {
+        RCLCPP_WARN(get_logger(), "Pipeline missing appsink for '%s'",
+                    decode_chain.c_str());
+        gst_object_unref(candidate);
+        continue;
+      }
+
+      GstStateChangeReturn ret = gst_element_set_state(candidate, GST_STATE_PLAYING);
+      if (ret == GST_STATE_CHANGE_FAILURE) {
+        RCLCPP_WARN(get_logger(),
+                    "Pipeline failed PLAYING for '%s'. Check interface '%s' and "
+                    "multicast stream.",
+                    decode_chain.c_str(), iface_.c_str());
+        gst_object_unref(sink);
+        gst_element_set_state(candidate, GST_STATE_NULL);
+        gst_object_unref(candidate);
+        continue;
+      }
+
+      pipeline_ = candidate;
+      appsink_ = GST_APP_SINK(sink);
+      pipeline_ok_ = true;
+      RCLCPP_INFO(get_logger(), "GStreamer pipeline opened successfully using '%s'",
+                  decode_chain.c_str());
+      return true;
     }
 
-    GstElement *sink = gst_bin_get_by_name(GST_BIN(pipeline_), "sink");
-    if (!sink) {
-      RCLCPP_ERROR(get_logger(), "Could not find appsink element");
-      gst_object_unref(pipeline_);
-      pipeline_ = nullptr;
-      return false;
-    }
-    appsink_ = GST_APP_SINK(sink);
-
-    GstStateChangeReturn ret = gst_element_set_state(pipeline_, GST_STATE_PLAYING);
-    if (ret == GST_STATE_CHANGE_FAILURE) {
-      RCLCPP_ERROR(get_logger(),
-                   "Pipeline failed to reach PLAYING state. "
-                   "Check that interface '%s' is up and receiving "
-                   "multicast traffic from the Go2.",
-                   iface_.c_str());
-      closePipeline();
-      return false;
-    }
-
-    pipeline_ok_ = true;
-    RCLCPP_INFO(get_logger(), "GStreamer pipeline opened successfully");
-    return true;
+    RCLCPP_ERROR(get_logger(),
+                 "Could not open any GStreamer decode chain. Install missing plugins "
+                 "(e.g. gstreamer1.0-plugins-bad/ugly/libav) or enable Jetson decode.");
+    return false;
   }
 
   void closePipeline() {
@@ -126,6 +146,9 @@ class CameraNode : public rclcpp::Node {
 
   void tick() {
     if (!pipeline_ok_) {
+      auto now_mono = std::chrono::steady_clock::now();
+      if (now_mono < next_open_attempt_time_) return;
+      next_open_attempt_time_ = now_mono + std::chrono::seconds(1);
       if (!openPipeline()) return;
     }
 
@@ -304,6 +327,8 @@ class CameraNode : public rclcpp::Node {
   uint32_t frames_published_ = 0;
   std::chrono::steady_clock::time_point fps_report_time_ =
       std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point next_open_attempt_time_ =
+      std::chrono::steady_clock::time_point::min();
 };
 
 int main(int argc, char **argv) {

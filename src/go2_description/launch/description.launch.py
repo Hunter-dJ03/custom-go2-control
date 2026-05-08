@@ -7,7 +7,6 @@ defaults to joint_states -> /joint_states, so we remap to the bridge topic.
 """
 
 import os
-import subprocess
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -18,8 +17,9 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     share = get_package_share_directory('go2_description')
-    xacro_path = os.path.join(share, 'urdf', 'go2.urdf.xacro')
-    robot_xml = subprocess.check_output(['xacro', xacro_path], text=True)
+    urdf_path = os.path.join(share, 'urdf', 'go2.urdf')
+    with open(urdf_path, 'r') as f:
+        robot_xml = f.read()
 
     joint_states_topic = DeclareLaunchArgument(
         'joint_states_topic',

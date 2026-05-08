@@ -3,38 +3,28 @@ project(go2_description)
 
 find_package(ament_cmake REQUIRED)
 
-set(_vendor_go2_sdk "${CMAKE_CURRENT_SOURCE_DIR}/../vendor/go2_ros2_sdk")
-set(GO2_SDK_URDF "${_vendor_go2_sdk}/go2_robot_sdk/urdf/go2.urdf")
-set(GO2_SDK_MESH_DIR "${_vendor_go2_sdk}/go2_robot_sdk/dae")
-
-if(NOT EXISTS "${GO2_SDK_URDF}")
+# URDF and Collada meshes are stored in-tree under urdf/ and meshes/
+# (origin: community go2_ros2_sdk, BSD license). Mesh URLs in go2.urdf are
+# already rewritten to package://go2_description/meshes/.
+set(_go2_urdf "${CMAKE_CURRENT_SOURCE_DIR}/urdf/go2.urdf")
+if(NOT EXISTS "${_go2_urdf}")
   message(FATAL_ERROR
     "\n"
     "========================================================\n"
-    "  go2_description: vendor go2_ros2_sdk URDF not found\n"
-    "\n"
-    "  Create a symlink to your go2_ros2_sdk checkout:\n"
-    "\n"
-    "    ln -sfn /path/to/unitree_ws/src/go2_ros2_sdk \\\n"
-    "            ${CMAKE_CURRENT_SOURCE_DIR}/../vendor/go2_ros2_sdk\n"
-    "\n"
-    "  See src/vendor/README.md.\n"
+    "  go2_description: urdf/go2.urdf missing\n"
+    "  Expected: ${_go2_urdf}\n"
     "========================================================\n"
   )
 endif()
 
-file(READ "${GO2_SDK_URDF}" _go2_urdf_text)
-string(REPLACE "package://go2_robot_sdk/dae/" "package://go2_description/meshes/"
-  _go2_urdf_text "${_go2_urdf_text}")
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/go2.urdf.xacro" "${_go2_urdf_text}")
-
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/go2.urdf.xacro"
+install(DIRECTORY urdf/
   DESTINATION share/${PROJECT_NAME}/urdf
+  FILES_MATCHING PATTERN "*.urdf" PATTERN "*.xacro"
 )
 
-install(DIRECTORY "${GO2_SDK_MESH_DIR}/"
+install(DIRECTORY meshes/
   DESTINATION share/${PROJECT_NAME}/meshes
-  FILES_MATCHING PATTERN "*.dae"
+  FILES_MATCHING PATTERN "*.dae" PATTERN "*.stl"
 )
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/config")
