@@ -24,6 +24,10 @@ if [ -f "$SCRIPT_DIR/install/setup.bash" ]; then
 fi
 
 # --- CycloneDDS configuration ---
+# Dual-interface config: WiFi (wlP1p1s0) primary for base station SEDP/data,
+# eno1 secondary for Go2 robot multicast. Both interfaces have multicast=true
+# with MulticastRecvNetworkInterfaceAddresses=all.
+# See ~/.config/go2/README.md for full documentation.
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 if [ -f "$HOME/.config/go2/cyclonedds.xml" ]; then
     export CYCLONEDDS_URI="file://${HOME}/.config/go2/cyclonedds.xml"

@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    input_topic: "/utlidar/cloud"
+    output_topic: "/go2/lidar/points_calibrated"
+    # true: keep each cloud's incoming header.frame_id (scale/offset are in that gathered frame).
+    # false: set header.frame_id to output_frame_id (must match the axes you calibrated in).
+    use_input_frame_id: true
+    output_frame_id: "utlidar_lidar"
+    # Static TF: tf_parent_frame -> tf_child_frame; yaw about parent +Z (deg)
+    broadcast_radar_tf: true
+    tf_parent_frame: "radar"
+    tf_child_frame: "utlidar_lidar"
+    tf_yaw_deg: 120.0
+    # Uniform scale about the lidar origin (same frame as incoming cloud): p' = scale * p + offset
+    scale: 1.0
+    offset_x: 0.0
+    offset_y: 0.0
+    offset_z: 0.0

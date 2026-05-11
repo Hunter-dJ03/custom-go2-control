@@ -10,6 +10,8 @@ foxglove_bridge:
       - "^/tf$"
       - "^/tf_static$"
       - "^/go2/.*"
+      # ZED wrapper (namespace /zed, node zed_node): images, depth, cloud, IMU, etc.
+      - "^/zed/.*"
       - "^/utlidar/cloud_base$"
       - "^/utlidar/cloud_deskewed$"
       - "^/sportmodestate$"

@@ -61,6 +61,11 @@ def generate_launch_description():
         default_value='80',
         description='JPEG quality for compressed camera topic',
     )
+    zed_camera_arg = DeclareLaunchArgument(
+        'zed_camera',
+        default_value='true',
+        description='Launch ZED2i + base_link→zed_camera_link TF when sensors are enabled',
+    )
     path_history_arg = DeclareLaunchArgument(
         'path_history_seconds',
         default_value='120.0',
@@ -123,6 +128,7 @@ def generate_launch_description():
             network_interface_arg,
             target_fps_arg,
             jpeg_quality_arg,
+            zed_camera_arg,
             path_history_arg,
             path_odom_stride_arg,
             IncludeLaunchDescription(
@@ -153,6 +159,7 @@ def generate_launch_description():
                     'network_interface': LaunchConfiguration('network_interface'),
                     'target_fps': LaunchConfiguration('target_fps'),
                     'jpeg_quality': LaunchConfiguration('jpeg_quality'),
+                    'zed_camera': LaunchConfiguration('zed_camera'),
                 }.items(),
                 condition=IfCondition(LaunchConfiguration('sensors')),
             ),
