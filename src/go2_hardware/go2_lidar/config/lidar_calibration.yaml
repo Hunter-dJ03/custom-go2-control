@@ -1,35 +1,43 @@
 /**:
   ros__parameters:
-    # Sensor-frame cloud. Confirmed via `ros2 topic echo`: header.frame_id = "utlidar_lidar".
+    # Sensor-frame cloud. header.frame_id = "utlidar_lidar".
     # In this frame the cloud origin IS the LiDAR optical center, so:
     #   - spherical r = ||p|| is true range along each laser ray (correct for range calibration)
-    #   - min_range_m is a true near-range cull around the sensor (filters self-returns from the body)
-    # /utlidar/cloud_deskewed lives in "odom" and produces the world-centered donut artefact —
-    # do NOT switch back without a real plan for doing calibration upstream of deskew.
+    #   - min_range_m is a true near-range cull around the sensor (filters self-returns)
     input_topic: "/utlidar/cloud"
     output_topic: "/go2/lidar/points_calibrated"
     use_input_frame_id: true
     output_frame_id: "utlidar_lidar"
-    # URDF supplies base_link -> radar, but no utlidar_lidar frame. This static TF bridges that
-    # gap so RViz/Nav2 can transform the published cloud. RPY applied in the standard tf2 order
-    # (yaw about Z, then pitch about new Y, then roll about new X) so the values match the
-    # deprecated `static_transform_publisher x y z yaw pitch roll parent child` ordering.
+    # Unitree's /utlidar/cloud stamps lag the Orin's ROS clock by minutes, which causes RViz
+    # to drop messages ("timestamp earlier than transform cache") when fixed frame = odom/map
+    # and Foxglove to render the cloud using a stale dynamic TF. Restamp with now() on publish.
+    # Set false only if you specifically need to preserve the upstream sensor time.
+    restamp: true
+    # NAMING NOTE: the URDF link "radar" is actually the LiDAR mount (Unitree misnamed it).
+    # `utlidar_lidar` is the SAME physical sensor at the SAME physical location as `radar`,
+    # so the translation is (0, 0, 0). The -120 deg yaw is NOT a frame-orientation fix; it
+    # corrects an angular offset baked into the Unitree cloud data itself.
+    # RPY applied in the standard tf2 order (yaw about Z, then pitch about new Y, then roll
+    # about new X) matching the deprecated `static_transform_publisher x y z yaw pitch roll
+    # parent child` ordering.
     broadcast_radar_tf: true
     tf_parent_frame: "radar"
     tf_child_frame: "utlidar_lidar"
+    tf_x_m: 0.0
+    tf_y_m: 0.0
+    tf_z_m: 0.0
     tf_yaw_deg: -120.0
     tf_pitch_deg: 0.0
     tf_roll_deg: 0.0
     # "cartesian": p' = scale * p + offset. "spherical": same direction, r' = max(0, range_scale*r + range_offset_m).
     # Prefer spherical with scale=1, offsets=0 for pure range-bias/scale calibration in the sensor frame.
     calibration_mode: "spherical"
-    range_scale: 1.015
-    range_offset_m: -0.16
+    range_scale: 1.02
+    range_offset_m: -0.17
     scale: 1.0
     offset_x: 0.0
     offset_y: 0.0
     offset_z: 0.0
     # Minimum sensor range (m). Returns with raw r = ||p|| below this are dropped before
-    # correction. With input_topic=/utlidar/cloud this is distance from the LiDAR origin, so
-    # it actually filters near-body returns. Set 0.0 to disable.
+    # correction. With input_topic=/utlidar/cloud this is distance from the LiDAR origin.
     min_range_m: 0.4

@@ -100,9 +100,13 @@ public:
     declare_parameter<double>("tf_yaw_deg", 0.0);
     declare_parameter<double>("tf_pitch_deg", 0.0);
     declare_parameter<double>("tf_roll_deg", 0.0);
+    declare_parameter<double>("tf_x_m", 0.0);
+    declare_parameter<double>("tf_y_m", 0.0);
+    declare_parameter<double>("tf_z_m", 0.0);
     declare_parameter<bool>("use_input_frame_id", true);
     output_frame_id_ = declare_parameter<std::string>("output_frame_id", "odom");
     use_input_frame_id_.store(get_parameter("use_input_frame_id").as_bool());
+    restamp_.store(declare_parameter<bool>("restamp", true));
 
     pub_ = create_publisher<sensor_msgs::msg::PointCloud2>(
       output_topic_, rclcpp::SensorDataQoS());
@@ -182,6 +186,11 @@ private:
         p.get_type() == rclcpp::ParameterType::PARAMETER_BOOL)
       {
         use_input_frame_id_.store(p.as_bool());
+      } else if (
+        p.get_name() == "restamp" &&
+        p.get_type() == rclcpp::ParameterType::PARAMETER_BOOL)
+      {
+        restamp_.store(p.as_bool());
       } else if (p.get_name() == "tf_yaw_deg" && p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
         resend_static_tf = true;
       } else if (
@@ -190,6 +199,18 @@ private:
         resend_static_tf = true;
       } else if (
         p.get_name() == "tf_roll_deg" && p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        resend_static_tf = true;
+      } else if (
+        p.get_name() == "tf_x_m" && p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        resend_static_tf = true;
+      } else if (
+        p.get_name() == "tf_y_m" && p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+      {
+        resend_static_tf = true;
+      } else if (
+        p.get_name() == "tf_z_m" && p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
       {
         resend_static_tf = true;
       } else if (
@@ -225,6 +246,9 @@ private:
     const double yaw_deg = get_parameter("tf_yaw_deg").as_double();
     const double pitch_deg = get_parameter("tf_pitch_deg").as_double();
     const double roll_deg = get_parameter("tf_roll_deg").as_double();
+    const double tx = get_parameter("tf_x_m").as_double();
+    const double ty = get_parameter("tf_y_m").as_double();
+    const double tz = get_parameter("tf_z_m").as_double();
 
     // Intrinsic ZYX (yaw about Z, then pitch about new Y, then roll about new X) — matches
     // tf2::Quaternion::setRPY and the deprecated static_transform_publisher "yaw pitch roll" order.
@@ -247,9 +271,9 @@ private:
     t.header.stamp = now();
     t.header.frame_id = parent;
     t.child_frame_id = child;
-    t.transform.translation.x = 0.0;
-    t.transform.translation.y = 0.0;
-    t.transform.translation.z = 0.0;
+    t.transform.translation.x = tx;
+    t.transform.translation.y = ty;
+    t.transform.translation.z = tz;
     t.transform.rotation.x = qx;
     t.transform.rotation.y = qy;
     t.transform.rotation.z = qz;
@@ -257,8 +281,8 @@ private:
     tf_static_->sendTransform(t);
     RCLCPP_INFO(
       get_logger(),
-      "Static TF \"%s\" -> \"%s\": rpy = (%.3f, %.3f, %.3f) deg",
-      parent.c_str(), child.c_str(), roll_deg, pitch_deg, yaw_deg);
+      "Static TF \"%s\" -> \"%s\": xyz = (%.3f, %.3f, %.3f) m, rpy = (%.3f, %.3f, %.3f) deg",
+      parent.c_str(), child.c_str(), tx, ty, tz, roll_deg, pitch_deg, yaw_deg);
   }
 
   void onCloud(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
@@ -463,6 +487,13 @@ private:
       std::lock_guard<std::mutex> lock(output_frame_mutex_);
       out.header.frame_id = output_frame_id_;
     }
+    // Unitree's /utlidar/cloud ships stamps that lag the Orin's ROS clock by minutes; that
+    // breaks any dynamic TF lookup (odom/map) downstream. Re-stamp with now() so RViz / Nav2
+    // can resolve TF against the current cache. Disable via `restamp:=false` if you need to
+    // preserve the upstream sensor time (e.g. for offline alignment with other sensors).
+    if (restamp_.load()) {
+      out.header.stamp = now();
+    }
     pub_->publish(out);
   }
 
@@ -479,6 +510,7 @@ private:
   std::atomic<double> min_range_m_{0.0};
   std::atomic<bool> use_spherical_range_{false};
   std::atomic<bool> use_input_frame_id_{true};
+  std::atomic<bool> restamp_{true};
 
   std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_;
 

@@ -34,9 +34,13 @@ The static TF (`tf_parent_frame` → `tf_child_frame`) only affects **TF**; it d
 
 **`min_range_m`** (double, default `0.0`): drops returns whose raw range `r = ‖p‖` from the cloud origin is below this threshold, **before** any calibration. `0.0` disables. On `/utlidar/cloud` (sensor frame) this is a true sensor-range cull; on `/utlidar/cloud_deskewed` (odom frame) it is distance from the odom origin and only useful at the start of a run.
 
+**`restamp`** (bool, default `true`): rewrites `header.stamp` to `node->now()` on publish. Unitree's `/utlidar/cloud` ships stamps that lag ROS time by minutes, which causes RViz to drop messages with the error *"timestamp on the message is earlier than all the data in the transform cache"* whenever the fixed frame requires a dynamic TF lookup (e.g. `odom`, `map`). Foxglove silently falls back to the latest dynamic TF, which renders the cloud at an offset that moves with the robot. Re-stamping with `now()` lets both viewers resolve TF correctly. Set `false` only if you specifically need the upstream sensor timestamp (e.g. for offline alignment with other sensors).
+
 **`use_input_frame_id`** (default `true`): the published cloud **keeps** the incoming `header.frame_id`. Set to `false` to force `output_frame_id` (must match the same axes as the point data).
 
-When `broadcast_radar_tf` is true, the node publishes a static transform on `/tf_static`: **`tf_parent_frame` → `tf_child_frame`**. Rotation about the parent **+Z** is **`tf_yaw_deg`**; translation is zero.
+**Naming note:** in the Unitree URDF the LiDAR mount link is called **`radar`** — that's a Unitree misnomer, the sensor is a LiDAR, not a radar. Treat `radar` and `utlidar_lidar` as the **same physical mount**: the static TF this node publishes has translation `(0, 0, 0)` because they are the same point in space. The yaw/pitch/roll on top compensate for an **angular offset baked into the Unitree cloud data**, not for any frame-mount geometry.
+
+When `broadcast_radar_tf` is true, the node publishes a static transform on `/tf_static`: **`tf_parent_frame` → `tf_child_frame`** with translation `(tf_x_m, tf_y_m, tf_z_m)` and RPY `(tf_roll_deg, tf_pitch_deg, tf_yaw_deg)`. RPY is applied in the standard tf2 order (yaw about Z, then pitch about new Y, then roll about new X), matching the deprecated `static_transform_publisher x y z yaw pitch roll parent child` ordering.
 
 | Parameter | Default |
 |-----------|---------|
@@ -47,12 +51,14 @@ When `broadcast_radar_tf` is true, the node publishes a static transform on `/tf
 | `broadcast_radar_tf` | `false` |
 | `tf_parent_frame` | `radar` |
 | `tf_child_frame` | `utlidar_lidar` |
-| `tf_yaw_deg` | `0.0` |
+| `tf_x_m`, `tf_y_m`, `tf_z_m` | `0.0` (radar and utlidar_lidar are the same mount) |
+| `tf_yaw_deg`, `tf_pitch_deg`, `tf_roll_deg` | `0.0` (corrects angular offset in Unitree data, not mount geometry) |
 | `calibration_mode` | `cartesian` or `spherical` |
 | `scale` | `1.0` (cartesian only) |
 | `offset_x`, `offset_y`, `offset_z` | `0.0` (cartesian only) |
 | `range_scale`, `range_offset_m` | `1.0`, `0.0` (spherical only; meters along the ray) |
 | `min_range_m` | `0.0` (drop returns with raw r < this; 0 disables) |
+| `restamp` | `true` (overwrite stale Unitree stamps with `node->now()` on publish) |
 
 Build `go2_lidar` from the **`custom-go2-control`** workspace root (where `install/` is produced), then source **`custom-go2-control/install/setup.bash`** (or `source .../setup_env.bash` from that repo). Using `colcon build` only under `unitree_ws` without this overlay will not refresh the binary `ros2 run` uses.
 
