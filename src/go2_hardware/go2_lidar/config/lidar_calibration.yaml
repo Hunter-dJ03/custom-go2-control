@@ -1,18 +1,35 @@
 /**:
   ros__parameters:
+    # Sensor-frame cloud. Confirmed via `ros2 topic echo`: header.frame_id = "utlidar_lidar".
+    # In this frame the cloud origin IS the LiDAR optical center, so:
+    #   - spherical r = ||p|| is true range along each laser ray (correct for range calibration)
+    #   - min_range_m is a true near-range cull around the sensor (filters self-returns from the body)
+    # /utlidar/cloud_deskewed lives in "odom" and produces the world-centered donut artefact —
+    # do NOT switch back without a real plan for doing calibration upstream of deskew.
     input_topic: "/utlidar/cloud"
     output_topic: "/go2/lidar/points_calibrated"
-    # true: keep each cloud's incoming header.frame_id (scale/offset are in that gathered frame).
-    # false: set header.frame_id to output_frame_id (must match the axes you calibrated in).
     use_input_frame_id: true
     output_frame_id: "utlidar_lidar"
-    # Static TF: tf_parent_frame -> tf_child_frame; yaw about parent +Z (deg)
+    # URDF supplies base_link -> radar, but no utlidar_lidar frame. This static TF bridges that
+    # gap so RViz/Nav2 can transform the published cloud. RPY applied in the standard tf2 order
+    # (yaw about Z, then pitch about new Y, then roll about new X) so the values match the
+    # deprecated `static_transform_publisher x y z yaw pitch roll parent child` ordering.
     broadcast_radar_tf: true
     tf_parent_frame: "radar"
     tf_child_frame: "utlidar_lidar"
-    tf_yaw_deg: 120.0
-    # Uniform scale about the lidar origin (same frame as incoming cloud): p' = scale * p + offset
+    tf_yaw_deg: -120.0
+    tf_pitch_deg: 0.0
+    tf_roll_deg: 0.0
+    # "cartesian": p' = scale * p + offset. "spherical": same direction, r' = max(0, range_scale*r + range_offset_m).
+    # Prefer spherical with scale=1, offsets=0 for pure range-bias/scale calibration in the sensor frame.
+    calibration_mode: "spherical"
+    range_scale: 1.015
+    range_offset_m: -0.16
     scale: 1.0
     offset_x: 0.0
     offset_y: 0.0
     offset_z: 0.0
+    # Minimum sensor range (m). Returns with raw r = ||p|| below this are dropped before
+    # correction. With input_topic=/utlidar/cloud this is distance from the LiDAR origin, so
+    # it actually filters near-body returns. Set 0.0 to disable.
+    min_range_m: 0.4

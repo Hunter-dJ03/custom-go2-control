@@ -106,16 +106,26 @@ If the symlinks are missing, `colcon build` will fail with instructions.
 
 ## Build
 
+Build from **this directory** (`custom-go2-control`), not from a parent folder like `unitree_ws` alone — `install/` and `build/` live here.
+
 ```bash
-source ~/go2_ws/setup_env.bash
-colcon build
+cd ~/unitree_ws/custom-go2-control   # or your clone path
+source /opt/ros/humble/setup.bash
+# If you use vendor Unitree msgs, source that install first (see setup_env.bash).
+colcon build --symlink-install
+```
+
+For a full shell (ROS + Unitree underlays + this overlay + CycloneDDS), use:
+
+```bash
+source ~/unitree_ws/custom-go2-control/setup_env.bash
 ```
 
 ## Usage
 
 ```bash
-# Source the environment
-source ~/go2_ws/setup_env.bash
+# Source the environment (from this repo root)
+source ~/unitree_ws/custom-go2-control/setup_env.bash
 
 # Verify robot connectivity (should list DDS topics)
 ros2 topic list

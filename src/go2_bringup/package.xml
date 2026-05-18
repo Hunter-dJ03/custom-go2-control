@@ -10,6 +10,7 @@
   <exec_depend>go2_bridge</exec_depend>
   <exec_depend>go2_localisation</exec_depend>
   <exec_depend>go2_camera</exec_depend>
+  <exec_depend>go2_lidar</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>zed_wrapper</exec_depend>
   <exec_depend>go2_description</exec_depend>

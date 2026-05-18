@@ -66,6 +66,11 @@ def generate_launch_description():
         default_value='true',
         description='Launch ZED2i + base_link→zed_camera_link TF when sensors are enabled',
     )
+    lidar_arg = DeclareLaunchArgument(
+        'lidar',
+        default_value='true',
+        description='Launch go2_lidar lidar_calibration_node when sensors are enabled',
+    )
     path_history_arg = DeclareLaunchArgument(
         'path_history_seconds',
         default_value='120.0',
@@ -129,6 +134,7 @@ def generate_launch_description():
             target_fps_arg,
             jpeg_quality_arg,
             zed_camera_arg,
+            lidar_arg,
             path_history_arg,
             path_odom_stride_arg,
             IncludeLaunchDescription(
@@ -160,6 +166,7 @@ def generate_launch_description():
                     'target_fps': LaunchConfiguration('target_fps'),
                     'jpeg_quality': LaunchConfiguration('jpeg_quality'),
                     'zed_camera': LaunchConfiguration('zed_camera'),
+                    'lidar': LaunchConfiguration('lidar'),
                 }.items(),
                 condition=IfCondition(LaunchConfiguration('sensors')),
             ),

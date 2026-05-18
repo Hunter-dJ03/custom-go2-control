@@ -1,4 +1,4 @@
-"""Sensor subsystem: front camera, ZED2i, (+ future LiDAR)."""
+"""Sensor subsystem: front camera, ZED2i, LiDAR calibration."""
 
 import math
 import os
@@ -45,6 +45,20 @@ def generate_launch_description():
         "zed_publish_map_tf",
         default_value="false",
         description="If true, ZED publishes map→odom TF (requires zed_publish_odom_tf)",
+    )
+    lidar_arg = DeclareLaunchArgument(
+        "lidar",
+        default_value="true",
+        description="Launch go2_lidar lidar_calibration_node",
+    )
+    lidar_params_file_arg = DeclareLaunchArgument(
+        "lidar_params_file",
+        default_value=os.path.join(
+            get_package_share_directory("go2_lidar"),
+            "config",
+            "lidar_calibration.yaml",
+        ),
+        description="Parameter YAML for lidar_calibration_node",
     )
 
     camera_launch = os.path.join(
@@ -97,6 +111,15 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration("zed_camera")),
     )
 
+    lidar_calibration_node = Node(
+        package="go2_lidar",
+        executable="lidar_calibration_node",
+        name="lidar_calibration_node",
+        parameters=[LaunchConfiguration("lidar_params_file")],
+        output="screen",
+        condition=IfCondition(LaunchConfiguration("lidar")),
+    )
+
     return LaunchDescription(
         [
             camera_arg,
@@ -106,6 +129,8 @@ def generate_launch_description():
             zed_camera_arg,
             zed_publish_odom_tf_arg,
             zed_publish_map_tf_arg,
+            lidar_arg,
+            lidar_params_file_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(camera_launch),
                 launch_arguments={
@@ -117,5 +142,6 @@ def generate_launch_description():
             ),
             zed_base_tf,
             zed_include,
+            lidar_calibration_node,
         ]
     )
