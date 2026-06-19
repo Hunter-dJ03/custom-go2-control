@@ -1,0 +1,28 @@
+# Go2 ZED2i overrides — only parameters that differ from stock zed-ros2-wrapper defaults.
+# Applied via sensors.launch.py → ros_params_override_path (loads after common_stereo + zed2i.yaml).
+#
+# Upstream reference: stereolabs/zed-ros2-wrapper (common_stereo.yaml, zed2i.yaml @ HEAD).
+# Revert local edits under src/vendor/.../zed_wrapper/config/ and tune here instead.
+---
+/**:
+  ros__parameters:
+    general:
+      camera_timeout_sec: 20
+      camera_max_reconnect: 20
+      grab_frame_rate: 20
+
+    depth:
+      depth_mode: 'NEURAL_PLUS'
+      min_depth: 0.1
+      point_cloud_freq: 3.0
+      depth_confidence: 80
+      voxel_point_cloud: true
+      voxel_size_mm: 50.0
+      voxel_resolution_mode: 'STEREO_UNCERTAINTY'
+      voxel_resolution_scale: 0.2
+
+    pos_tracking:
+      pos_tracking_mode: 'GEN_3'
+
+    gnss_fusion:
+      publish_utm_tf: false

@@ -29,6 +29,7 @@ Phase 1 starts **`foxglove_bridge`** by default so you can visualize without RVi
 4. Add panels (3D, Image, Raw Messages, etc.) and subscribe to the same topics as the RViz config, for example:
    - `/robot_description`, **`/go2/lf/tf`**, `/tf_static` (full **`/tf`** is not bridged)
    - **`/go2/lf/joint_states`** for leg articulation in the 3D panel
+   - `/zed/zed_node/point_cloud/cloud_registered` — voxelized live ZED cloud (see `go2_bringup/config/zed_override.yaml`; `depth_registered` stays full for RTAB-Map)
    - `/utlidar/cloud_deskewed`, `/go2/front_camera/image_raw`, `/go2/odom`, `/go2/path`
    - RTAB-Map (default `rtabmap_ns` in `go2_slam`): **`/rtabmap/...`** (e.g. `/rtabmap/assembled_cloud`, `/rtabmap/map`).
 

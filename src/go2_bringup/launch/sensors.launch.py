@@ -60,6 +60,15 @@ def generate_launch_description():
         ),
         description="Parameter YAML for lidar_calibration_node",
     )
+    zed_ros_params_override_arg = DeclareLaunchArgument(
+        "zed_ros_params_override",
+        default_value=os.path.join(
+            get_package_share_directory("go2_bringup"),
+            "config",
+            "zed_override.yaml",
+        ),
+        description="ZED wrapper YAML override (go2 tuning vs stock zed-ros2-wrapper defaults)",
+    )
 
     camera_launch = os.path.join(
         get_package_share_directory("go2_camera"),
@@ -105,8 +114,7 @@ def generate_launch_description():
             "publish_tf": LaunchConfiguration("zed_publish_odom_tf"),
             "publish_map_tf": LaunchConfiguration("zed_publish_map_tf"),
             "xacro_path": zed_xacro,
-            # After YAML + launch dict; keeps UTM↔map TF off unless you use GNSS fusion.
-            "param_overrides": "gnss_fusion.publish_utm_tf:=false",
+            "ros_params_override_path": LaunchConfiguration("zed_ros_params_override"),
         }.items(),
         condition=IfCondition(LaunchConfiguration("zed_camera")),
     )
@@ -131,6 +139,7 @@ def generate_launch_description():
             zed_publish_map_tf_arg,
             lidar_arg,
             lidar_params_file_arg,
+            zed_ros_params_override_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(camera_launch),
                 launch_arguments={
