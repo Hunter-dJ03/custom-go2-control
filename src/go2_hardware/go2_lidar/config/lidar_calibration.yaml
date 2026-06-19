@@ -3,7 +3,7 @@
     # Sensor-frame cloud. header.frame_id = "utlidar_lidar".
     # In this frame the cloud origin IS the LiDAR optical center, so:
     #   - spherical r = ||p|| is true range along each laser ray (correct for range calibration)
-    #   - min_range_m is a true near-range cull around the sensor (filters self-returns)
+    #   - min_range_m culls returns with ‖p′‖ < threshold after calibration (scale/offset or spherical range)
     input_topic: "/utlidar/cloud"
     output_topic: "/go2/lidar/points_calibrated"
     use_input_frame_id: true

@@ -42,6 +42,9 @@ source ~/go2_ws/setup_env.bash
 # Phase 1: go2_description (RSP) + go2_bridge + foxglove_bridge (Foxglove Studio on ws://127.0.0.1:8765)
 ros2 launch go2_bringup phase1.launch.py
 
+# With RTAB-Map (disable static identity map→odom so SLAM publishes map→odom):
+# ros2 launch go2_bringup phase1.launch.py map_odom_identity_tf:=false
+
 # RViz instead of Foxglove, or bridge only:
 # ros2 launch go2_bringup phase1.launch.py foxglove:=false rviz:=true
 # ros2 launch go2_bringup foxglove_bridge.launch.py

@@ -1,0 +1,8 @@
+# Low-frequency /tf for remote visualization (Foxglove). Excludes leg links (use /go2/lf/joint_states).
+tf_lf_relay_node:
+  ros__parameters:
+    input_tf_topic: /tf
+    output_tf_topic: /go2/lf/tf
+    publish_rate_hz: 20.0
+    exclude_child_frame_patterns:
+      - "^(FR|FL|RR|RL)_"

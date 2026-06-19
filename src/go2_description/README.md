@@ -34,8 +34,15 @@ ros2 launch go2_description description.launch.py
 
 ## Key frames
 
-SolidWorks-derived link tree (`base_link`, `odom`, `map`, leg links,
-`imu_link`, cameras per upstream URDF).
+SolidWorks-derived link tree (`base_footprint` → `base_link`, legs, bodies,
+cameras — see `go2.urdf`).
+
+**Important:** **`map`** and **`odom`** were **removed** from this URDF (they appeared as fixed
+SolidWorks-export joints only). **`odom` → `base_link`** is published by **`go2_bridge`**.
+**`map` → `odom`** comes from **`map_odom_tf_node`** (identity placeholder via
+`go2_localisation`'s LaunchArg `map_odom_identity_tf:=true`) **or from SLAM** (dynamic).
+Do not put those world-frame links back into **`robot_description`**, or you will duplicate
+static TF versus the localization stack.
 
 ## Dependencies
 

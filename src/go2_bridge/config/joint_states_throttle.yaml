@@ -1,0 +1,7 @@
+# Low-frequency JointState relay for remote visualization (Foxglove).
+# Onboard robot_state_publisher keeps using full-rate /go2/joint_states.
+joint_states_throttle_node:
+  ros__parameters:
+    input_topic: /go2/joint_states
+    output_topic: /go2/lf/joint_states
+    publish_rate_hz: 20.0

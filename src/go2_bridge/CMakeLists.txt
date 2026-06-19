@@ -12,6 +12,7 @@ find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(unitree_go REQUIRED)
 find_package(unitree_api REQUIRED)
@@ -33,8 +34,29 @@ ament_target_dependencies(go2_bridge_node
   go2_interfaces
 )
 
-install(TARGETS go2_bridge_node
+add_executable(joint_states_throttle_node
+  src/joint_states_throttle_node.cpp
+)
+ament_target_dependencies(joint_states_throttle_node
+  rclcpp
+  sensor_msgs
+)
+
+add_executable(tf_lf_relay_node
+  src/tf_lf_relay_node.cpp
+)
+ament_target_dependencies(tf_lf_relay_node
+  geometry_msgs
+  rclcpp
+  tf2_msgs
+)
+
+install(TARGETS go2_bridge_node joint_states_throttle_node tf_lf_relay_node
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()

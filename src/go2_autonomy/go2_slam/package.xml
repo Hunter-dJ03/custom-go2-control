@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>go2_slam</name>
+  <version>0.1.0</version>
+  <description>
+    SLAM for the Unitree Go2. Wraps RTAB-Map in external-odometry mode so it
+    publishes only map -> odom (odom -> base_link comes from go2_bridge).
+  </description>
+  <maintainer email="hunter@todo.todo">hunter</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Runtime dependencies for the RTAB-Map launch pipeline. -->
+  <exec_depend>rtabmap_sync</exec_depend>
+  <exec_depend>rtabmap_slam</exec_depend>
+  <exec_depend>rtabmap_viz</exec_depend>
+  <exec_depend>rtabmap_util</exec_depend>
+  <!-- icp_odometry is only launched when external_odom_frame_id is empty, but
+       keep the dep so overriding to no-external-odom still works on this stack. -->
+  <exec_depend>rtabmap_odom</exec_depend>
+
+  <!-- ZED-only standalone SLAM demo launch (launch/zed.launch.py). -->
+  <exec_depend>zed_wrapper</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

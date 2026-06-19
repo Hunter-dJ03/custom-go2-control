@@ -24,11 +24,13 @@ rviz2 -d $(ros2 pkg prefix go2_rviz)/share/go2_rviz/rviz/go2_nav.rviz
 Phase 1 starts **`foxglove_bridge`** by default so you can visualize without RViz.
 
 1. Install [Foxglove Studio](https://foxglove.dev/download) (desktop or web).
-2. Launch the stack: `ros2 launch go2_bringup phase1.launch.py` (bridge listens on **8765**). Topic filtering is defined in **`go2_bringup/config/foxglove_phase1.yaml`** (`topic_whitelist` regex list aligned with `go2_default.rviz`: TF, `robot_description`, `/go2/*`, `/utlidar/*`, Unitree state topics, `rosout`, `parameter_events`).
+2. Launch the stack: `ros2 launch go2_bringup phase1.launch.py` (bridge listens on **8765**). Topic filtering is defined in **`go2_bringup/config/foxglove_phase1.yaml`** (`topic_whitelist` regex list: TF, `robot_description`, `/go2/*`, `/zed/*`, `/rtabmap/*`, an explicit set of `/utlidar/...` LiDAR topics (voxel map topics are omitted so Foxglove does not crash on missing `unitree_go` schemas), common RTAB-Map outputs like `/map`, Unitree state topics, `rosout`, `parameter_events`).
 3. In Studio: **Open connection** → **Foxglove WebSocket** → `ws://127.0.0.1:8765` (or your robot’s IP from another machine).
 4. Add panels (3D, Image, Raw Messages, etc.) and subscribe to the same topics as the RViz config, for example:
-   - `/robot_description`, `/tf`, `/tf_static`
+   - `/robot_description`, **`/go2/lf/tf`**, `/tf_static` (full **`/tf`** is not bridged)
+   - **`/go2/lf/joint_states`** for leg articulation in the 3D panel
    - `/utlidar/cloud_deskewed`, `/go2/front_camera/image_raw`, `/go2/odom`, `/go2/path`
+   - RTAB-Map (default `rtabmap_ns` in `go2_slam`): **`/rtabmap/...`** (e.g. `/rtabmap/assembled_cloud`, `/rtabmap/map`).
 
 Disable the bridge or switch back to RViz with launch args, for example:
 

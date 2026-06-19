@@ -1,13 +1,24 @@
-"""Placeholder map -> odom TF (identity) and odom trajectory path for RViz."""
+"""Placeholder map -> odom TF (identity) and odom trajectory path for RViz.
+
+Disable `map_odom_identity_tf` when another node publishes `map -> odom` (e.g. RTAB-Map),
+or transforms will conflict with the static broadcaster on `/tf_static`.
+"""
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
+    map_odom_identity_tf_arg = DeclareLaunchArgument(
+        'map_odom_identity_tf',
+        default_value='true',
+        description='If true, publish static identity map→odom (needed for RViz fixed_frame=map '
+                    'until SLAM provides map→odom). Set false alongside rtabmap or any SLAM publishing map→odom.',
+    )
     history_sec = DeclareLaunchArgument(
         'path_history_seconds',
         default_value='120.0',
@@ -20,6 +31,7 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
+            map_odom_identity_tf_arg,
             history_sec,
             path_stride,
             Node(
@@ -27,6 +39,7 @@ def generate_launch_description():
                 executable='map_odom_tf_node',
                 name='map_odom_tf_node',
                 output='screen',
+                condition=IfCondition(LaunchConfiguration('map_odom_identity_tf')),
                 parameters=[
                     {
                         'map_frame': 'map',

@@ -32,7 +32,7 @@ Confirm with `ros2 topic echo <input_topic> --once` and read `header.frame_id`.
 
 The static TF (`tf_parent_frame` → `tf_child_frame`) only affects **TF**; it does **not** change point coordinates. If you use deskewed clouds in **`odom`**, keep **`broadcast_radar_tf`** false unless you intentionally publish a transform that matches that frame (see shipped `lidar_calibration.yaml`).
 
-**`min_range_m`** (double, default `0.0`): drops returns whose raw range `r = ‖p‖` from the cloud origin is below this threshold, **before** any calibration. `0.0` disables. On `/utlidar/cloud` (sensor frame) this is a true sensor-range cull; on `/utlidar/cloud_deskewed` (odom frame) it is distance from the odom origin and only useful at the start of a run.
+**`min_range_m`** (double, default `0.0`): drops returns whose calibrated range `r′ = ‖p′‖` is below this threshold, **after** Cartesian scale/offset or spherical range scaling. `0.0` disables. On `/utlidar/cloud` (near sensor-origin coordinates) this is still a practical near-field cull; on `/utlidar/cloud_deskewed` `p′` is in deskew axes (often `odom`), so compare against calibrated distance from that origin.
 
 **`restamp`** (bool, default `true`): rewrites `header.stamp` to `node->now()` on publish. Unitree's `/utlidar/cloud` ships stamps that lag ROS time by minutes, which causes RViz to drop messages with the error *"timestamp on the message is earlier than all the data in the transform cache"* whenever the fixed frame requires a dynamic TF lookup (e.g. `odom`, `map`). Foxglove silently falls back to the latest dynamic TF, which renders the cloud at an offset that moves with the robot. Re-stamping with `now()` lets both viewers resolve TF correctly. Set `false` only if you specifically need the upstream sensor timestamp (e.g. for offline alignment with other sensors).
 
@@ -57,7 +57,7 @@ When `broadcast_radar_tf` is true, the node publishes a static transform on `/tf
 | `scale` | `1.0` (cartesian only) |
 | `offset_x`, `offset_y`, `offset_z` | `0.0` (cartesian only) |
 | `range_scale`, `range_offset_m` | `1.0`, `0.0` (spherical only; meters along the ray) |
-| `min_range_m` | `0.0` (drop returns with raw r < this; 0 disables) |
+| `min_range_m` | `0.0` (drop returns with calibrated ‖p′‖ < this; 0 disables) |
 | `restamp` | `true` (overwrite stale Unitree stamps with `node->now()` on publish) |
 
 Build `go2_lidar` from the **`custom-go2-control`** workspace root (where `install/` is produced), then source **`custom-go2-control/install/setup.bash`** (or `source .../setup_env.bash` from that repo). Using `colcon build` only under `unitree_ws` without this overlay will not refresh the binary `ros2 run` uses.

@@ -10,7 +10,7 @@ Localisation against existing maps.
 
 **DEFERRED** — full localisation (AMCL / RTAB-Map, etc.) comes after SLAM and sensor validation (Phase 4).
 
-**Shipped now:** `map_odom_tf_node` publishes a **static identity** `map` → `odom` so the TF tree is `map` → `odom` → `base_link` (with `odom` → `base_link` from `go2_bridge`). RViz fixed frame can be `map`. Replace this node when SLAM publishes a real `map` → `odom` transform.
+**Shipped now:** `map_odom_tf_node` (optional via **`map_odom_identity_tf`** in launch) publishes a **static identity** `map` → `odom` so the TF tree is `map` → `odom` → `base_link` (with `odom` → `base_link` from `go2_bridge`). RViz fixed frame can be `map`. **Turn identity TF off (`map_odom_identity_tf:=false`) when SLAM publishes `map` → `odom`** (e.g. RTAB-Map), otherwise `/tf_static` conflicts with `/tf`.
 
 ## Purpose
 
@@ -49,7 +49,7 @@ Fully custom implementation running on the AGX Orin.
 
 **`odom_path_history_node` parameters:** `odom_topic`, `path_topic`, `path_history_seconds` (default `120.0`), `max_path_poses` (default `50000`, safety cap), `path_odom_stride` (default `15` — append only every Nth odometry message; `1` = every message). **`/go2/path` is published only when a pose is appended** (after stride), not on every odometry callback; the path publisher uses a shallow QoS history to limit backlog.
 
-**Launch:** `localization.launch.py` and `phase1.launch.py` accept `path_history_seconds` and `path_odom_stride` (e.g. `path_odom_stride:=10`).
+**Launch:** `localization.launch.py` and `phase1.launch.py` accept `path_history_seconds`, `path_odom_stride`, and **`map_odom_identity_tf`** (default `true`; set **`false`** with RTAB-Map so only SLAM publishes `map` → `odom`).
 
 **Note:** Time-based pruning of old poses still runs every odometry message, but RViz will not see those removals until the next publish (next append). If the robot is stationary for a long time, the drawn trail may lag until motion resumes; use `path_odom_stride:=1` or add a separate publish-on-prune mode if you need that.
 

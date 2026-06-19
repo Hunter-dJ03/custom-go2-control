@@ -1,5 +1,9 @@
 # foxglove_bridge parameters for Phase 1 (go2_default.rviz parity).
 # Use a YAML string array so topic_whitelist is not mangled by launch/XML substitution.
+#
+# Do NOT whitelist broad ^/utlidar/.* unless unitree_go types (e.g. VoxelMapCompressed) are on
+# the bridge's ROS path — missing .msg defs make foxglove_bridge spam rosgraphPollThread errors
+# ("bad optional access") and break topic discovery so clients lose /zed/* and other channels.
 foxglove_bridge:
   ros__parameters:
     port: 8765
@@ -7,13 +11,41 @@ foxglove_bridge:
     # foxglove_bridge uses std::regex_match (full-string match), not search — use .* for trees.
     topic_whitelist:
       - "^/robot_description$"
-      - "^/tf$"
       - "^/tf_static$"
+      # Full /tf is not bridged — Foxglove uses /go2/lf/tf + /go2/lf/joint_states instead.
       - "^/go2/.*"
-      # ZED wrapper (namespace /zed, node zed_node): images, depth, cloud, IMU, etc.
+      # ZED wrapper (/zed/zed_container, /zed/zed_node/... including IPC-advertised repeats)
       - "^/zed/.*"
-      - "^/utlidar/cloud_base$"
+      # RTAB-Map (go2_slam rtabmap.launch.py): default namespace `rtabmap` → `/rtabmap/map`,
+      # `/rtabmap/assembled_cloud`, `/rtabmap/rgbd_image`, `/rtabmap/rtabmap/*`, `/rtabmap/rtabmap_viz/*`,
+      # etc. One regex covers the whole subtree.
+      - "^/rtabmap($|/.*)"
+      # Non-namespaced / alternate stacks (still allowlisted when applicable)
+      - "^/map$"
+      - "^/cloud_map$"
+      - "^/grid_map$"
+      - "^/proj_map$"
+      - "^/octomap_binary$"
+      - "^/octomap_full$"
+      - "^/assembled_cloud$"
+      # Unitree L2 (/utlidar/*): explicit list — excludes /utlidar/voxel_map_compressed & voxel_map
+      # (Foxglove often has no schema for unitree_go/*; crashes graph polling otherwise).
+      - "^/utlidar/switch$"
+      - "^/utlidar/server_log$"
+      - "^/utlidar/robot_pose$"
+      - "^/utlidar/robot_odom$"
+      - "^/utlidar/lidar_state$"
       - "^/utlidar/cloud_deskewed$"
+      - "^/utlidar/cloud_base$"
+      - "^/utlidar/cloud$"
+      - "^/utlidar/client_command$"
+      - "^/utlidar/mapping_cmd$"
+      - "^/utlidar/imu$"
+      - "^/utlidar/height_map_array$"
+      - "^/utlidar/height_map$"
+      - "^/utlidar/range_map$"
+      - "^/utlidar/range_info$"
+      - "^/utlidar/grid_map$"
       - "^/sportmodestate$"
       - "^/lowstate$"
       - "^/lf/sportmodestate$"

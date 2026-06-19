@@ -1,7 +1,8 @@
 // Cartesian: p' = scale * p + offset in the incoming cloud axes (msg.header.frame_id).
 // Spherical: same ray direction from the cloud origin; r' = max(0, range_scale * r + range_offset_m).
 // Static TF does not change point coordinates. If use_input_frame_id is true, output keeps frame_id.
-// min_range_m > 0 drops returns whose raw range r = ||p|| is below the threshold (sensor frame).
+// min_range_m > 0 drops returns whose calibrated range ||p'|| is below the threshold (after scale/offset
+// or spherical range adjustment).
 
 #include <algorithm>
 #include <atomic>
@@ -351,12 +352,13 @@ private:
       if (!readXyz(row, off_x, off_y, off_z, dtype, &xd, &yd, &zd)) {
         continue;
       }
-      const double r = std::sqrt(xd * xd + yd * yd + zd * zd);
-      if (r < min_r) {
+      const double r_in = std::sqrt(xd * xd + yd * yd + zd * zd);
+      double xo = xd, yo = yd, zo = zd;
+      transformPoint(spherical, s, ox, oy, oz, rs, roff, r_in, &xo, &yo, &zo);
+      const double r_out = std::sqrt(xo * xo + yo * yo + zo * zo);
+      if (r_out < min_r) {
         continue;
       }
-      double xo = xd, yo = yd, zo = zd;
-      transformPoint(spherical, s, ox, oy, oz, rs, roff, r, &xo, &yo, &zo);
       uint8_t * dst = out_ptr + kept * point_step;
       std::memcpy(dst, row, point_step);
       writeXyz(dst, off_x, off_y, off_z, dtype, xo, yo, zo);

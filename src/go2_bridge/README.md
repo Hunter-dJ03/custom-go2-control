@@ -34,6 +34,20 @@ Contains **zero business logic** — pure transport and data conversion.
 | `/go2/joint_states` | sensor_msgs/JointState | `/lowstate` motor_state[0..11] |
 | `/go2/battery` | sensor_msgs/BatteryState | `/lowstate` BMS (throttled) |
 
+### joint_states_throttle_node
+
+Relays the latest **`/go2/joint_states`** at a fixed rate (default **20 Hz**) on **`/go2/lf/joint_states`** for remote visualization. Onboard **`robot_state_publisher`** keeps subscribing to full-rate `/go2/joint_states`.
+
+**Parameters:** `input_topic`, `output_topic`, `publish_rate_hz` (see `config/joint_states_throttle.yaml`).
+
+### tf_lf_relay_node
+
+Buffers dynamic transforms from **`/tf`**, drops leg link frames (default: child frames matching `^(FR|FL|RR|RL)_`), and republishes the rest at a fixed rate (default **20 Hz**) on **`/go2/lf/tf`**. Use with **`/go2/lf/joint_states`** in Foxglove instead of full **`/tf`**.
+
+**Parameters:** `input_tf_topic`, `output_tf_topic`, `publish_rate_hz`, `exclude_child_frame_patterns` (see `config/tf_lf_relay.yaml`).
+
+`header.stamp` on `/go2/odom`, `/go2/imu`, and joints/battery paths uses the node's ROS time (`now()`), not embedded Unitree MCU stamps — avoids TF / perception timestamp skew when compared to calibrated LiDAR (which may optionally restamp in `go2_lidar`).
+
 Planned (not implemented in this node yet): foot_force, motion raw_state, lidar relay, camera decode, joy.
 
 **TF:** `odom` → `base_link`

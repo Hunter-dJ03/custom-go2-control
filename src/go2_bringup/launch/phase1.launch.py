@@ -81,6 +81,12 @@ def generate_launch_description():
         default_value='15',
         description='Append to /go2/path every Nth odometry message',
     )
+    map_odom_identity_tf_arg = DeclareLaunchArgument(
+        'map_odom_identity_tf',
+        default_value='true',
+        description='Static identity map→odom placeholder (localization.launch.py). Disable when '
+                    'running RTAB-Map or any node that publishes map→odom (e.g. map_odom_identity_tf:=false).',
+    )
 
     desc_launch = os.path.join(
         get_package_share_directory('go2_description'),
@@ -137,6 +143,7 @@ def generate_launch_description():
             lidar_arg,
             path_history_arg,
             path_odom_stride_arg,
+            map_odom_identity_tf_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(desc_launch),
             ),
@@ -146,6 +153,7 @@ def generate_launch_description():
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(localization_launch),
                 launch_arguments={
+                    'map_odom_identity_tf': LaunchConfiguration('map_odom_identity_tf'),
                     'path_history_seconds': LaunchConfiguration('path_history_seconds'),
                     'path_odom_stride': LaunchConfiguration('path_odom_stride'),
                 }.items(),
