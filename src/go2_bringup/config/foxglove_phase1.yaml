@@ -12,6 +12,7 @@ foxglove_bridge:
     topic_whitelist:
       - "^/robot_description$"
       - "^/tf_static$"
+      # - "^/tf$"
       # Full /tf is not bridged — Foxglove uses /go2/lf/tf + /go2/lf/joint_states instead.
       - "^/go2/.*"
       # ZED wrapper (/zed/zed_container, /zed/zed_node/... including IPC-advertised repeats)

@@ -201,6 +201,7 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
         ),
 
         # Grid basics
+        'Grid/FromDepth': 'false',
         'Grid/CellSize': '0.05',
         'Grid/RangeMin': '0.3',
         'Grid/RangeMax': '6.0',
@@ -331,10 +332,10 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
             'frame_id': 'base_link',
             'qos': qos_int,
             'qos_camera_info': qos_int,
-            'subscribe_rgbd': True,
+            # 'subscribe_rgbd': True,
             'approx_sync': approx_sync_rgbd,
-            'wait_imu_to_init': True,
-            'subscribe_odom_info': True,
+            'wait_imu_to_init': False,
+            'subscribe_odom_info': False,
         }
         if approx_sync_rgbd:
             rgbd_sync_params['approx_sync_max_interval'] = float(
@@ -402,7 +403,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'rgbd_sync',
-            default_value='false',
+            default_value='true',
             description='Run rtabmap_sync/rgbd_sync for ZED inputs. Forced on when map_registration_source:=zed '
                         '(use zed_*_topic for paths; defaults match zed_wrapper rgb/color/rect + depth_registered).'),
 

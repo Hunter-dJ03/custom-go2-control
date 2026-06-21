@@ -10,7 +10,7 @@ Simultaneous localisation and mapping.
 
 Launch **after** `go2_bringup` (sensors + bridge) is running.
 
-**TF:** Phase 1’s default **`map_odom_identity_tf:=true`** starts a **static identity** `map` → `odom` placeholder. Running RTAB-Map alongside that **locks** loop-closure corrections. Use **`ros2 launch go2_bringup phase1.launch.py … map_odom_identity_tf:=false`** (or omit `localization` if split) so only RTAB‑Map publishes `map` → `odom`.
+**TF:** Phase 1 defaults **`map_odom_identity_tf:=false`** so RTAB‑Map can publish `map` → `odom`. Set **`map_odom_identity_tf:=true`** only for a static identity placeholder (e.g. RViz fixed frame `map` before SLAM); that **locks** loop-closure corrections if SLAM runs at the same time.
 
 Nodes use ROS namespace **`rtabmap`** by default (`rtabmap_ns`): map and clouds appear as **`/rtabmap/map`**, **`/rtabmap/assembled_cloud`**, **`/rtabmap/rgbd_image`**, etc. Use **`rtabmap_ns:=`** empty only for legacy unprefixed topics.
 
@@ -29,6 +29,26 @@ That combination sets **Reg/Strategy = Visual+ICP** (upstream `zed.launch.py` is
 Default **`qos:=2`** (best effort) matches **`go2_lidar`**/**`go2_bridge`** `SensorDataQoS` publishers; use **`qos:=1`** only if everything on the lidar RGB-D chain is reliable. Default ZED topics match **`MAKERSPACE/src/bringup/launch/odometry_launch.py`**: `/zed/zed_node/rgb/color/rect/image`, matching `camera_info`, depth `/zed/zed_node/depth/depth_registered`; **`rgbd_approx_sync`** defaults to **false** (exact sync). Set `rgbd_approx_sync:=true` if you need approximate sync and tune **`approx_rgbd_sync_max_interval`**.
 
 Override **`zed_rgb_topic`**, **`zed_camera_info_topic`**, or **`zed_depth_topic`** if your ZED graph differs (e.g. older `image_rect_color` layout).
+
+## ZED-only SLAM (`zed.launch.py`)
+
+Strict copy of upstream **`rtabmap_examples/zed.launch.py`** (apt `ros-humble-rtabmap-examples`) — same shared `parameters` list and `remappings`, same nodes (`zed_camera.launch.py` + `rgbd_sync` + `rgbd_odometry` + `rtabmap` + `rtabmap_viz`). Two intentional deviations:
+
+- Topics use the **modern** stereolabs `zed-ros2-wrapper` layout (`/zed/zed_node/rgb/color/rect/image` + matching `camera_info`); upstream still uses the legacy `/zed/zed_node/rgb/image_rect_color`.
+- `wait_imu_to_init: False` (upstream is `True`). Stock `zed-ros2-wrapper` does **not** publish the `zed_camera_link -> zed_imu_link` static TF, so `True` blocks `rgbd_odometry` forever.
+
+Topics are **hardcoded** to match upstream style — if you need a different ZED topic graph, edit the launch file (the per-topic launch args that used to live here have been removed for parity with upstream).
+
+With phase1 (bridge, lidar, mount TF) — disable the duplicate ZED driver on phase1:
+
+```bash
+ros2 launch go2_bringup phase1.launch.py zed_camera:=false
+ros2 launch go2_slam zed.launch.py camera_model:=zed2i
+```
+
+Use `use_zed_odometry:=true` to feed ZED's `/zed/zed_node/odom` into `rtabmap` instead of running `rgbd_odometry` here.
+
+Default phase1 (`zed_camera:=true`) uses **`zed_override.yaml`** via sensors; the SLAM launch uses the upstream VGA tempfile override instead.
 
 ## Status
 

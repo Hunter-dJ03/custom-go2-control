@@ -12,17 +12,20 @@
       grab_frame_rate: 20
 
     depth:
-      depth_mode: 'NEURAL_PLUS'
+      depth_mode: 'NEURAL'
       min_depth: 0.1
-      point_cloud_freq: 3.0
-      depth_confidence: 80
-      voxel_point_cloud: true
-      voxel_size_mm: 50.0
-      voxel_resolution_mode: 'STEREO_UNCERTAINTY'
-      voxel_resolution_scale: 0.2
+      point_cloud_freq: 5.0
+      depth_confidence: 60
+      # voxel_point_cloud: true
+      # voxel_size_mm: 50.0
+      # voxel_resolution_mode: 'STEREO_UNCERTAINTY'
+      # voxel_resolution_scale: 0.2
 
     pos_tracking:
       pos_tracking_mode: 'GEN_3'
+      # When using go2_slam zed.launch.py use_zed_odometry:=true with zed_publish_odom_tf,
+      # keep this as camera_odom so ZED VO TF does not fight go2_bridge on frame "odom".
+      odometry_frame: 'camera_odom'
 
     gnss_fusion:
       publish_utm_tf: false

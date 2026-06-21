@@ -34,7 +34,8 @@ def generate_launch_description():
     zed_camera_arg = DeclareLaunchArgument(
         "zed_camera",
         default_value="true",
-        description="Launch ZED2i (zed_wrapper zed_camera.launch.py) and base_link→zed_camera_link static TF",
+        description="Launch zed_wrapper zed_camera.launch.py (ZED2i). Set false when go2_slam "
+        "zed.launch.py starts the camera (phase1 still publishes base_link→zed_camera_link mount TF).",
     )
     zed_publish_odom_tf_arg = DeclareLaunchArgument(
         "zed_publish_odom_tf",
@@ -104,7 +105,6 @@ def generate_launch_description():
             "--child-frame-id",
             "zed_camera_link",
         ],
-        condition=IfCondition(LaunchConfiguration("zed_camera")),
     )
 
     zed_include = IncludeLaunchDescription(

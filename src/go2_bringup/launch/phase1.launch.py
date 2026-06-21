@@ -64,7 +64,23 @@ def generate_launch_description():
     zed_camera_arg = DeclareLaunchArgument(
         'zed_camera',
         default_value='true',
-        description='Launch ZED2i + base_link→zed_camera_link TF when sensors are enabled',
+        description='Launch zed_wrapper from sensors.launch.py. Set false when go2_slam zed.launch.py '
+                    'starts the camera (avoids two zed_camera.launch.py on one USB device).',
+    )
+    zed_publish_odom_tf_arg = DeclareLaunchArgument(
+        'zed_publish_odom_tf',
+        default_value='false',
+        description='ZED wrapper publishes odom→zed_camera_link TF (set true for go2_slam zed.launch.py '
+                    'use_zed_odometry:=true; conflicts with go2_bridge odom if both publish odom TF)',
+    )
+    zed_ros_params_override_arg = DeclareLaunchArgument(
+        'zed_ros_params_override',
+        default_value=os.path.join(
+            get_package_share_directory('go2_bringup'),
+            'config',
+            'zed_override.yaml',
+        ),
+        description='ZED wrapper YAML override (go2 tuning vs stock zed-ros2-wrapper defaults)',
     )
     lidar_arg = DeclareLaunchArgument(
         'lidar',
@@ -83,9 +99,9 @@ def generate_launch_description():
     )
     map_odom_identity_tf_arg = DeclareLaunchArgument(
         'map_odom_identity_tf',
-        default_value='true',
-        description='Static identity map→odom placeholder (localization.launch.py). Disable when '
-                    'running RTAB-Map or any node that publishes map→odom (e.g. map_odom_identity_tf:=false).',
+        default_value='false',
+        description='Static identity map→odom placeholder (localization.launch.py). Enable '
+                    '(map_odom_identity_tf:=true) for RViz fixed_frame=map before SLAM provides map→odom.',
     )
 
     desc_launch = os.path.join(
@@ -140,6 +156,8 @@ def generate_launch_description():
             target_fps_arg,
             jpeg_quality_arg,
             zed_camera_arg,
+            zed_publish_odom_tf_arg,
+            zed_ros_params_override_arg,
             lidar_arg,
             path_history_arg,
             path_odom_stride_arg,
@@ -174,6 +192,8 @@ def generate_launch_description():
                     'target_fps': LaunchConfiguration('target_fps'),
                     'jpeg_quality': LaunchConfiguration('jpeg_quality'),
                     'zed_camera': LaunchConfiguration('zed_camera'),
+                    'zed_publish_odom_tf': LaunchConfiguration('zed_publish_odom_tf'),
+                    'zed_ros_params_override': LaunchConfiguration('zed_ros_params_override'),
                     'lidar': LaunchConfiguration('lidar'),
                 }.items(),
                 condition=IfCondition(LaunchConfiguration('sensors')),

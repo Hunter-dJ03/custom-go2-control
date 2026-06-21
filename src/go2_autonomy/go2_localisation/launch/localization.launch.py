@@ -15,9 +15,9 @@ from launch_ros.parameter_descriptions import ParameterValue
 def generate_launch_description():
     map_odom_identity_tf_arg = DeclareLaunchArgument(
         'map_odom_identity_tf',
-        default_value='true',
-        description='If true, publish static identity map→odom (needed for RViz fixed_frame=map '
-                    'until SLAM provides map→odom). Set false alongside rtabmap or any SLAM publishing map→odom.',
+        default_value='false',
+        description='If true, publish static identity map→odom (for RViz fixed_frame=map before SLAM). '
+                    'Default false so RTAB-Map can publish map→odom without /tf_static conflict.',
     )
     history_sec = DeclareLaunchArgument(
         'path_history_seconds',

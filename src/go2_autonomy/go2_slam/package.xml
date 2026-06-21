@@ -20,8 +20,6 @@
   <!-- icp_odometry is only launched when external_odom_frame_id is empty, but
        keep the dep so overriding to no-external-odom still works on this stack. -->
   <exec_depend>rtabmap_odom</exec_depend>
-
-  <!-- ZED-only standalone SLAM demo launch (launch/zed.launch.py). -->
   <exec_depend>zed_wrapper</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
