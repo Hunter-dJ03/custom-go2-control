@@ -10,21 +10,24 @@ Simultaneous localisation and mapping.
 
 Launch **after** `go2_bringup` (sensors + bridge) is running.
 
-**TF:** Phase 1 defaults **`map_odom_identity_tf:=false`** so RTAB‑Map can publish `map` → `odom`. Set **`map_odom_identity_tf:=true`** only for a static identity placeholder (e.g. RViz fixed frame `map` before SLAM); that **locks** loop-closure corrections if SLAM runs at the same time.
+**TF ownership:** Phase 1 defaults **`map_odom_identity_tf:=false`** and **does not** publish Go2 `odom` → `base_link`. This SLAM launch runs ZED RGB-D odometry (`odom_source:=rgbd`, default) or ZED SDK tracking odometry (`odom_source:=zed`), rebases startup `z` from the one-shot `/go2/odom_seed` bridge topic, publishes the corrected `/go2/odom` plus TF `odom` → `base_link`, and lets RTAB-Map publish `map` → `odom`.
 
 Nodes use ROS namespace **`rtabmap`** by default (`rtabmap_ns`): map and clouds appear as **`/rtabmap/map`**, **`/rtabmap/assembled_cloud`**, **`/rtabmap/rgbd_image`**, etc. Use **`rtabmap_ns:=`** empty only for legacy unprefixed topics.
 
 ```bash
-# LiDAR-only mapping
+# Default: LiDAR mapping with RTAB-Map rgbd_odometry + loop closure
 ros2 launch go2_slam rtabmap.launch.py
 
-# LiDAR + ZED RGB-D for visual loop closure (rgbd_sync node is started inside this launch)
-ros2 launch go2_slam rtabmap.launch.py rgbd_sync:=true
+# ZED SDK tracking odometry instead of rgbd_odometry (still rebases startup z)
+ros2 launch go2_slam rtabmap.launch.py odom_source:=zed
+
+# ZED-only mapping with ZED tracking odometry
+ros2 launch go2_slam rtabmap.launch.py map_registration_source:=zed odom_source:=zed
 ```
 
-That combination sets **Reg/Strategy = Visual+ICP** (upstream `zed.launch.py` is visual‑only **Reg/Strategy=0** without LiDAR; LiDAR‑only mapping here uses **ICP only**).
+Default LiDAR mode sets **Reg/Strategy = Visual+ICP**, so the camera provides odometry + loop closure while LiDAR contributes mapping geometry. ZED-primary mode uses **Reg/Strategy = 0** for RGB-D-only odometry, loop closure, and mapping.
 
-`rgbd_sync:=true` publishes `rtabmap_msgs/RGBDImage` on **`/rtabmap/rgbd_image`** (unless you set `rgbd_image_topic`). **Defaults:** **`odom_sensor_sync:=auto`** turns off RGB/odom time-compensation whenever RGB‑D runs with **`external_odom_frame_id`** (recommended with `go2_bridge` stamping `now()` vs ZED image stamps). **`rtabmap_viz_max_odom_update_rate:=auto`** sets **`0`** (= no throttle) in that same RGB‑D+external‑odom case — otherwise **`rtabmap_viz`** throttled frames skip updates unless **`rgbd_odometry`** publishes **`OdomInfo`** (we do **not** run that node to avoid conflicting `odom` TF). You still map and close loops inside **`rtabmap`**; VO-style green feature overlays behave like **`zed.launch.py`** only when a separate **`rgbd_odometry`** is running.
+`rgbd_sync` publishes `rtabmap_msgs/RGBDImage` on **`/rtabmap/rgbd_image`** (unless you set `rgbd_image_topic`). This launch always runs `rgbd_sync`; `rgbd_odometry` runs unless **`odom_source:=zed`**. The odometry TF is rebased once at startup so the initial `base_link` height in `odom` matches the first `/sportmodestate` pose instead of starting at `z=0`. With **`odom_source:=zed`**, keep **`zed_publish_odom_tf:=false`** on phase1 so `odom_rebase_node` owns `odom` → `base_link`.
 
 Default **`qos:=2`** (best effort) matches **`go2_lidar`**/**`go2_bridge`** `SensorDataQoS` publishers; use **`qos:=1`** only if everything on the lidar RGB-D chain is reliable. Default ZED topics match **`MAKERSPACE/src/bringup/launch/odometry_launch.py`**: `/zed/zed_node/rgb/color/rect/image`, matching `camera_info`, depth `/zed/zed_node/depth/depth_registered`; **`rgbd_approx_sync`** defaults to **false** (exact sync). Set `rgbd_approx_sync:=true` if you need approximate sync and tune **`approx_rgbd_sync_max_interval`**.
 
@@ -56,7 +59,7 @@ Default phase1 (`zed_camera:=true`) uses **`zed_override.yaml`** via sensors; th
 
 ## Purpose
 
-Builds maps using LiDAR (and optionally ZED RGB-D for loop closure).  
+Builds maps using LiDAR or ZED RGB-D while always using ZED RGB-D odometry.  
 Publishes the map and the map → odom TF transform during active mapping.
 
 Separated from `go2_localisation` to allow independent use:
@@ -68,7 +71,8 @@ Separated from `go2_localisation` to allow independent use:
 | Topic | Type | Purpose |
 |-------|------|---------|
 | `/go2/lidar/points_filtered` | sensor_msgs/PointCloud2 | LiDAR input |
-| `/go2/odom` | nav_msgs/Odometry | Odometry prior |
+| `/go2/odom_seed` | geometry_msgs/PoseStamped | Startup height seed from the bridge |
+| `/go2/odom` | nav_msgs/Odometry | Rebased visual odometry published by this stack |
 | `/go2/imu/data` | sensor_msgs/Imu | IMU for inertial fusion |
 
 ## Publications (planned)

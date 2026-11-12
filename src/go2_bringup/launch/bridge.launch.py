@@ -36,6 +36,16 @@ def generate_launch_description():
         default_value=default_tf_lf_params,
         description='YAML parameters for tf_lf_relay_node',
     )
+    publish_odom_topic_arg = DeclareLaunchArgument(
+        'publish_odom_topic',
+        default_value='true',
+        description='Publish /go2/odom from /sportmodestate',
+    )
+    publish_odom_tf_arg = DeclareLaunchArgument(
+        'publish_odom_tf',
+        default_value='true',
+        description='Publish odom->base_link TF from /sportmodestate',
+    )
 
     bridge = Node(
         package='go2_bridge',
@@ -48,6 +58,8 @@ def generate_launch_description():
                 'base_frame': 'base_link',
                 'sport_mode_state_topic': '/sportmodestate',
                 'low_state_topic': '/lowstate',
+                'publish_odom_topic': LaunchConfiguration('publish_odom_topic'),
+                'publish_odom_tf': LaunchConfiguration('publish_odom_tf'),
             }
         ],
     )
@@ -79,6 +91,8 @@ def generate_launch_description():
         joint_states_throttle_params_arg,
         tf_lf_relay_arg,
         tf_lf_relay_params_arg,
+        publish_odom_topic_arg,
+        publish_odom_tf_arg,
         bridge,
         joint_states_throttle,
         tf_lf_relay,

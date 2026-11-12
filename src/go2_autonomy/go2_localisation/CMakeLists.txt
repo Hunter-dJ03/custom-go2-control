@@ -10,6 +10,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 
 add_executable(map_odom_tf_node
@@ -31,7 +32,19 @@ ament_target_dependencies(odom_path_history_node
   rclcpp
 )
 
-install(TARGETS map_odom_tf_node odom_path_history_node
+add_executable(odom_rebase_node
+  src/odom_rebase_node.cpp
+)
+ament_target_dependencies(odom_rebase_node
+  geometry_msgs
+  nav_msgs
+  rclcpp
+  tf2
+  tf2_geometry_msgs
+  tf2_ros
+)
+
+install(TARGETS map_odom_tf_node odom_path_history_node odom_rebase_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

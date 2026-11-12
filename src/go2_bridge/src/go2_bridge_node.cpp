@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "go2_interfaces/srv/sport_api_call.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -35,11 +36,16 @@ class Go2BridgeNode : public rclcpp::Node {
         tf_broadcaster_(std::make_unique<tf2_ros::TransformBroadcaster>(*this)) {
     odom_frame_ = declare_parameter<std::string>("odom_frame", "odom");
     base_frame_ = declare_parameter<std::string>("base_frame", "base_link");
+    publish_odom_topic_ = declare_parameter<bool>("publish_odom_topic", true);
+    publish_odom_tf_ = declare_parameter<bool>("publish_odom_tf", true);
+    publish_odom_seed_ = declare_parameter<bool>("publish_odom_seed", true);
     sport_topic_ =
         declare_parameter<std::string>("sport_mode_state_topic", "/sportmodestate");
     low_topic_ = declare_parameter<std::string>("low_state_topic", "/lowstate");
 
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("/go2/odom", rclcpp::SensorDataQoS());
+    odom_seed_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>(
+        "/go2/odom_seed", rclcpp::QoS(1).reliable().transient_local());
     imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("/go2/imu", rclcpp::SensorDataQoS());
     joint_pub_ =
         create_publisher<sensor_msgs::msg::JointState>("/go2/joint_states", rclcpp::SensorDataQoS());
@@ -105,17 +111,29 @@ class Go2BridgeNode : public rclcpp::Node {
     }
     odom.twist.covariance[0] = -1.0;
 
-    odom_pub_->publish(odom);
+    if (publish_odom_topic_) {
+      odom_pub_->publish(odom);
+    }
 
-    geometry_msgs::msg::TransformStamped tf;
-    tf.header.stamp = odom.header.stamp;
-    tf.header.frame_id = odom_frame_;
-    tf.child_frame_id = base_frame_;
-    tf.transform.translation.x = odom.pose.pose.position.x;
-    tf.transform.translation.y = odom.pose.pose.position.y;
-    tf.transform.translation.z = odom.pose.pose.position.z;
-    tf.transform.rotation = odom.pose.pose.orientation;
-    tf_broadcaster_->sendTransform(tf);
+    if (publish_odom_tf_) {
+      geometry_msgs::msg::TransformStamped tf;
+      tf.header.stamp = odom.header.stamp;
+      tf.header.frame_id = odom_frame_;
+      tf.child_frame_id = base_frame_;
+      tf.transform.translation.x = odom.pose.pose.position.x;
+      tf.transform.translation.y = odom.pose.pose.position.y;
+      tf.transform.translation.z = odom.pose.pose.position.z;
+      tf.transform.rotation = odom.pose.pose.orientation;
+      tf_broadcaster_->sendTransform(tf);
+    }
+
+    if (publish_odom_seed_ && !odom_seed_published_) {
+      geometry_msgs::msg::PoseStamped odom_seed;
+      odom_seed.header = odom.header;
+      odom_seed.pose = odom.pose.pose;
+      odom_seed_pub_->publish(odom_seed);
+      odom_seed_published_ = true;
+    }
   }
 
   void onLowState(const unitree_go::msg::LowState::SharedPtr msg) {
@@ -204,11 +222,16 @@ class Go2BridgeNode : public rclcpp::Node {
 
   std::string odom_frame_;
   std::string base_frame_;
+  bool publish_odom_topic_;
+  bool publish_odom_tf_;
+  bool publish_odom_seed_;
   std::string sport_topic_;
   std::string low_topic_;
 
   uint32_t low_state_count_{0};
   uint32_t battery_publish_stride_{25};
+  bool odom_seed_published_{false};
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr odom_seed_pub_;
 };
 
 int main(int argc, char **argv) {

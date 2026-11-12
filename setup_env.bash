@@ -23,6 +23,12 @@ if [ -f "$SCRIPT_DIR/install/setup.bash" ]; then
     source "$SCRIPT_DIR/install/setup.bash"
 fi
 
+# --- Point-LIO vendor overlay (built separately; src/vendor/ has COLCON_IGNORE) ---
+POINT_LIO_INSTALL="$SCRIPT_DIR/src/vendor/ros2_ws/point_lio_ws/install/setup.bash"
+if [ -f "$POINT_LIO_INSTALL" ]; then
+    source "$POINT_LIO_INSTALL"
+fi
+
 # --- CycloneDDS configuration ---
 # Dual-interface in principle: WiFi (wlP1p1s0) primary for base station SEDP/data,
 # robot Ethernet (${GO2_ETH}, default eno1) secondary for Go2 robot multicast.

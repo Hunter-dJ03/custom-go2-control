@@ -48,7 +48,7 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
     parameters = [{'frame_id': 'zed_camera_link',
                    'subscribe_rgbd': True,
                    'approx_sync': False,
-                   'wait_imu_to_init': False}]
+                   'wait_imu_to_init': True}]
 
     remappings = [('imu', '/zed/zed_node/imu/data')]
 
@@ -66,7 +66,9 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
             launch_arguments={'camera_model': LaunchConfiguration('camera_model'),
                               'ros_params_override_path': zed_override_file.name,
                               'publish_tf': LaunchConfiguration('use_zed_odometry'),
-                              'publish_map_tf': 'false'}.items(),
+                              'publish_map_tf': 'false',
+                              'publish_imu_tf': 'true'
+                              }.items(),
         ),
 
         # Sync rgb/depth/camera_info together

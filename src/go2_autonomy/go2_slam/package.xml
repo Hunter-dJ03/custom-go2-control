@@ -4,8 +4,8 @@
   <name>go2_slam</name>
   <version>0.1.0</version>
   <description>
-    SLAM for the Unitree Go2. Wraps RTAB-Map in external-odometry mode so it
-    publishes only map -> odom (odom -> base_link comes from go2_bridge).
+    SLAM for the Unitree Go2. Runs RTAB-Map RGB-D odometry from the ZED,
+    rebases startup height from a bridge seed, and publishes map -> odom.
   </description>
   <maintainer email="hunter@todo.todo">hunter</maintainer>
   <license>Apache-2.0</license>
@@ -21,6 +21,7 @@
        keep the dep so overriding to no-external-odom still works on this stack. -->
   <exec_depend>rtabmap_odom</exec_depend>
   <exec_depend>zed_wrapper</exec_depend>
+  <exec_depend>go2_localisation</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

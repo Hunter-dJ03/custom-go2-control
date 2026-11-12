@@ -15,7 +15,8 @@ changes never propagate beyond the bridge.
 
 Performs:
 - Type conversion (Unitree types → standard ROS 2 types)
-- TF broadcasting (odom → base_link)
+- Optional odometry / TF broadcasting from `/sportmodestate`
+- One-shot odometry seed publishing for SLAM startup height rebasing
 - H264 front camera decoding (NVDEC hardware accelerated when available)
 - Generic sport API service (fire-and-forget and request-response patterns)
 
@@ -29,7 +30,8 @@ Contains **zero business logic** — pure transport and data conversion.
 
 | Topic | Type | Source |
 |-------|------|--------|
-| `/go2/odom` | nav_msgs/Odometry | `/sportmodestate` |
+| `/go2/odom` | nav_msgs/Odometry | `/sportmodestate` (only when `publish_odom_topic:=true`) |
+| `/go2/odom_seed` | geometry_msgs/PoseStamped | First `/sportmodestate` pose after startup |
 | `/go2/imu` | sensor_msgs/Imu | `/lowstate` |
 | `/go2/joint_states` | sensor_msgs/JointState | `/lowstate` motor_state[0..11] |
 | `/go2/battery` | sensor_msgs/BatteryState | `/lowstate` BMS (throttled) |
@@ -50,7 +52,7 @@ Buffers dynamic transforms from **`/tf`**, drops leg link frames (default: child
 
 Planned (not implemented in this node yet): foot_force, motion raw_state, lidar relay, camera decode, joy.
 
-**TF:** `odom` → `base_link`
+**TF:** Optional `odom` → `base_link` when `publish_odom_tf:=true`
 
 **Services:**
 
@@ -58,7 +60,7 @@ Planned (not implemented in this node yet): foot_force, motion raw_state, lidar 
 |---------|------|---------|
 | `/go2/sport_api_call` | go2_interfaces/SportApiCall | Publish to `/api/sport/request` (fire-and-forget) |
 
-**Parameters:** `odom_frame`, `base_frame`, `sport_mode_state_topic`, `low_state_topic`
+**Parameters:** `odom_frame`, `base_frame`, `sport_mode_state_topic`, `low_state_topic`, `publish_odom_topic`, `publish_odom_tf`, `publish_odom_seed`
 
 ## Safety
 

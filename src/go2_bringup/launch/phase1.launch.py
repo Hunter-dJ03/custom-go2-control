@@ -97,6 +97,16 @@ def generate_launch_description():
         default_value='15',
         description='Append to /go2/path every Nth odometry message',
     )
+    publish_go2_odom_topic_arg = DeclareLaunchArgument(
+        'publish_go2_odom_topic',
+        default_value='false',
+        description='Publish /go2/odom from go2_bridge. Default false so SLAM owns robot odometry.',
+    )
+    publish_go2_odom_tf_arg = DeclareLaunchArgument(
+        'publish_go2_odom_tf',
+        default_value='false',
+        description='Publish odom->base_link from go2_bridge. Default false so SLAM owns robot odometry.',
+    )
     map_odom_identity_tf_arg = DeclareLaunchArgument(
         'map_odom_identity_tf',
         default_value='false',
@@ -161,12 +171,18 @@ def generate_launch_description():
             lidar_arg,
             path_history_arg,
             path_odom_stride_arg,
+            publish_go2_odom_topic_arg,
+            publish_go2_odom_tf_arg,
             map_odom_identity_tf_arg,
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(desc_launch),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(bridge_launch),
+                launch_arguments={
+                    'publish_odom_topic': LaunchConfiguration('publish_go2_odom_topic'),
+                    'publish_odom_tf': LaunchConfiguration('publish_go2_odom_tf'),
+                }.items(),
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(localization_launch),

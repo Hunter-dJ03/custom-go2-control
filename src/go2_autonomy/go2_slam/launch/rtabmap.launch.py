@@ -2,35 +2,20 @@
 #
 # TF architecture this launch assumes:
 #   map               (published here by rtabmap_slam)
-#   └── odom          published by go2_bridge (/go2/odom)
+#   └── odom          published here from rebased rgbd_odometry or ZED tracking odometry
 #       └── base_link
 #           └── sensors   (URDF + static TFs from go2_bringup/sensors.launch.py)
 #
 # This launch ONLY runs RTAB-Map. Sensors (ZED2i, Unitree L2 LiDAR, the lidar
 # calibration node, and the base_link->zed_camera_link static TF) come from
-# `go2_bringup` (`sensors.launch.py`). Odometry comes from `go2_bridge`
-# (`/go2/odom` + `odom -> base_link` TF). No icp_odometry / rgbd_odometry node
-# is started here -- doing so would create a second `odom -> base_link`
-# publisher and break TF.
-#
-# go2_bridge stamps `/go2/imu` and `/go2/odom` with `now()` (host time); ZED uses camera/driver
-# timestamps — enabling `odom_sensor_sync:=true` on top of skewed clocks can degrade TF/visual
-# registration. Prefer `odom_sensor_sync:=auto` (default): off when RGB-D + external_odom TF is used.
-# rtabmap_viz defaults `max_odom_update_rate` to **auto**: **0 Hz throttle** (= unlimited) whenever
-# there is RGB-D plus external odom — otherwise viz throttled frames look for rgbd_odometry's
-# OdomInfo, which does not exist in this launch, so the GUI skips updates (“no green features”).
-#
-# Upstream zed.launch.py runs rgbd_odometry for visual odometry; that publishes OdomInfo that
-# rtabmap_viz overlays. Wheel odom TF + rgbd_sync has no VO node — overlays come from slam stats/map.
+# `go2_bringup` (`sensors.launch.py`). This stack runs `rgbd_odometry` from the
+# synchronized ZED RGB-D stream, then rebases its startup z using the one-shot
+# `/go2/odom_seed` pose captured by `go2_bridge` from `/sportmodestate`.
 #
 # `go2_lidar` uses `SensorDataQoS` — default `qos` below is **best_effort** to match deskew/rtabmap subs.
 #
-# When `external_odom_frame_id` is set (default `odom`), the existing logic
-# below skips `icp_odometry` and lets `rtabmap_slam` publish `map -> odom`.
-#
-# RGB-D loop closure: set `rgbd_sync:=true` to run `rtabmap_sync/rgbd_sync` in-process.
-# Defaults match `/media/dogbot/MAKERSPACE/src/bringup/launch/odometry_launch.py` for rgbd_sync
-# (rgbd_odometry is not used — external odom from go2_bridge). Optional GUI: `rtabmap_viz:=true`.
+# This launch always runs `rtabmap_sync/rgbd_sync` plus `rtabmap_odom/rgbd_odometry`.
+# Optional GUI: `rtabmap_viz:=true`.
 #
 # All slam nodes live under ROS namespace `/rtabmap` by default (`rtabmap_ns`, e.g. `/rtabmap/assembled_cloud`,
 # `/rtabmap/map`). Foxglove: `topic_whitelist` includes `^/rtabmap($|/.*)`. Set `rtabmap_ns:=` empty to revert.
@@ -43,8 +28,11 @@
 #   ros2 launch go2_slam rtabmap.launch.py rgbd_sync:=true
 #   (Reg/Strategy becomes Visual+ICP so the camera participates in loop closures, not ICP-on-LiDAR only.)
 #
-# ZED-primary mapping only (rgbd_sync implied; LiDAR deskew/assembler omitted; go2 odom unchanged):
-#   ros2 launch go2_slam rtabmap.launch.py map_registration_source:=zed
+# ZED SDK positional tracking odometry (skip rgbd_odometry; still rebases startup z):
+#   ros2 launch go2_slam rtabmap.launch.py odom_source:=zed
+#
+# ZED-primary mapping with ZED tracking odometry:
+#   ros2 launch go2_slam rtabmap.launch.py map_registration_source:=zed odom_source:=zed
 #
 # With RTAB-Map GUI viewer:
 #   ros2 launch go2_slam rtabmap.launch.py rtabmap_viz:=true
@@ -63,18 +51,13 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
 
     frame_id = LaunchConfiguration('frame_id')
 
-    external_odom_frame_id = LaunchConfiguration('external_odom_frame_id').perform(context)
+    odom_frame_id = LaunchConfiguration('odom_frame_id').perform(context)
 
     rtabmap_ns = LaunchConfiguration('rtabmap_ns').perform(context).strip().strip('/')
 
-    fixed_frame_from_imu = False
     fixed_frame_id = LaunchConfiguration('fixed_frame_id').perform(context)
     if not fixed_frame_id:
-        if external_odom_frame_id:
-            fixed_frame_id = external_odom_frame_id
-        else:
-            fixed_frame_from_imu = True
-            fixed_frame_id = frame_id.perform(context) + "_stabilized"
+        fixed_frame_id = odom_frame_id if odom_frame_id else frame_id.perform(context) + "_stabilized"
 
     imu_topic = LaunchConfiguration('imu_topic')
 
@@ -83,9 +66,11 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
     )
     zed_primary = map_registration_source == 'zed'
 
-    rgbd_sync_user = LaunchConfiguration('rgbd_sync').perform(context).lower() == 'true'
-    # ZED-primary mode always runs rgbd_sync (aligned with go2_bridge odom — no rgbd_odometry here).
-    effective_rgbd_sync = zed_primary or rgbd_sync_user
+    odom_source = LaunchConfiguration('odom_source').perform(context).lower().strip()
+    use_zed_tracking_odom = odom_source == 'zed'
+
+    # This stack always derives odometry from ZED RGB-D, so rgbd_sync is always enabled.
+    effective_rgbd_sync = True
 
     rgbd_image_topic_str = LaunchConfiguration('rgbd_image_topic').perform(context)
     rgbd_images_topic_str = LaunchConfiguration('rgbd_images_topic').perform(context)
@@ -107,18 +92,14 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
         registration_strategy_str = '1'
 
     odom_sync_arg = LaunchConfiguration('odom_sensor_sync').perform(context).strip().lower()
-    if odom_sync_arg == 'auto':
-        # Bridge odom timestamps often don't match camera; extra odom-vs-image correction can fail.
-        odom_sensor_sync = not (rgbd_image_used and external_odom_frame_id)
-    elif odom_sync_arg in ('true', '1', 'yes'):
+    if odom_sync_arg in ('true', '1', 'yes'):
         odom_sensor_sync = True
     else:
         odom_sensor_sync = False
 
     viz_odom_arg = LaunchConfiguration('rtabmap_viz_max_odom_update_rate').perform(context).strip().lower()
     if viz_odom_arg == 'auto':
-        viz_max_odom_update_rate = 0.0 if (
-            rgbd_image_used and external_odom_frame_id) else 10.0
+        viz_max_odom_update_rate = 0.0 if rgbd_image_used else 10.0
     else:
         viz_max_odom_update_rate = float(viz_odom_arg)
 
@@ -164,26 +145,22 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
         'Icp/OutlierRatio': '0.7',
     }
 
-    icp_odometry_parameters = {
-        'expected_update_rate': LaunchConfiguration('expected_update_rate'),
-        'wait_imu_to_init': True,
-        'odom_frame_id': 'icp_odom',
-        'guess_frame_id': fixed_frame_id,
-        # RTAB-Map's internal parameters are strings:
-        'Odom/ScanKeyFrameThr': '0.4',
-        'OdomF2M/ScanSubtractRadius': str(voxel_size_value),
-        'OdomF2M/ScanMaxSize': '15000',
-        'OdomF2M/BundleAdjustment': 'false',
-        'Icp/CorrespondenceRatio': '0.01',
+    rgbd_odometry_parameters = {
+        'frame_id': frame_id,
+        'odom_frame_id': odom_frame_id,
+        'publish_tf': False,
+        'approx_sync': False,
+        'subscribe_rgbd': True,
+        'wait_imu_to_init': False,
+        'qos': qos_int,
     }
 
     rtabmap_parameters = {
         'subscribe_depth': False,
         'subscribe_rgb': False,
-        'subscribe_odom_info': not external_odom_frame_id,
+        'subscribe_odom_info': not use_zed_tracking_odom,
         'subscribe_scan_cloud': not zed_primary,
-        # When external_odom_frame_id is set, rtabmap publishes map -> odom.
-        'odom_frame_id': (external_odom_frame_id if external_odom_frame_id else ""),
+        'odom_frame_id': odom_frame_id,
         'odom_sensor_sync': odom_sensor_sync,
         # RTAB-Map's internal parameters are strings:
         'Rtabmap/DetectionRate': '0',
@@ -244,7 +221,10 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
         # Delete the previous database (~/.ros/rtabmap.db) on each fresh mapping run.
         arguments.append('-d')
 
-    slam_remappings = list(remappings) + [('gps/fix', LaunchConfiguration('gps_topic'))]
+    slam_remappings = list(remappings) + [
+        ('gps/fix', LaunchConfiguration('gps_topic')),
+        ('odom', '/go2/odom'),
+    ]
     if not zed_primary:
         slam_remappings.append(('scan_cloud', 'assembled_cloud'))
 
@@ -260,6 +240,42 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
     }
 
     nodes = []
+    raw_odom_topic = (
+        LaunchConfiguration('zed_odom_topic').perform(context)
+        if use_zed_tracking_odom
+        else 'odom_rgbd_raw'
+    )
+
+    odom_rebase_params = {
+        'raw_odom_topic': raw_odom_topic,
+        'output_odom_topic': '/go2/odom',
+        'seed_pose_topic': '/go2/odom_seed',
+        'odom_frame': odom_frame_id,
+        'base_frame': frame_id.perform(context),
+        'publish_tf': True,
+        'use_host_time': (not zed_primary) and (not use_zed_tracking_odom),
+        'transform_input_to_base': use_zed_tracking_odom,
+    }
+
+    if not use_zed_tracking_odom:
+        nodes.append(
+            Node(
+                package='rtabmap_odom',
+                executable='rgbd_odometry',
+                output='screen',
+                parameters=[shared_parameters, rgbd_odometry_parameters],
+                remappings=remappings + [('odom', raw_odom_topic)],
+            ),
+        )
+
+    nodes.append(
+        Node(
+            package='go2_localisation',
+            executable='odom_rebase_node',
+            output='screen',
+            parameters=[odom_rebase_params],
+        ),
+    )
 
     # LiDAR mapping path only (default). ZED-primary uses RGB-D-only like rtabmap_examples/zed.launch.py.
     if not zed_primary:
@@ -270,7 +286,7 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
                     'use_sim_time': use_sim_time,
                     'qos': qos_int,
                     'fixed_frame_id': fixed_frame_id,
-                    'wait_for_transform': 0.2,
+                    'wait_for_transform': 0.5,
                     'slerp': deskewing_slerp,
                 }],
                 remappings=[
@@ -283,10 +299,13 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
                     'qos': qos_int,
                     'qos_odom': qos_int,
                     'assembling_time': LaunchConfiguration('assembling_time'),
-                    'fixed_frame_id': (
-                        external_odom_frame_id if external_odom_frame_id else ''),
+                    'fixed_frame_id': odom_frame_id,
+                    'wait_for_transform': 0.5,
                 }],
-                remappings=[('cloud', lidar_topic_deskewed)]),
+                remappings=[
+                    ('cloud', lidar_topic_deskewed),
+                    ('odom', '/go2/odom'),
+                ]),
         ])
 
     nodes.append(
@@ -358,30 +377,6 @@ def launch_setup(context: LaunchContext, *args, **kwargs):
             ),
         )
 
-    if not external_odom_frame_id:
-        # Lidar odometry (only when NO external odom is provided).
-        # For the Go2 we leave external_odom_frame_id=odom, so this branch is skipped
-        # and we rely on go2_bridge's odom -> base_link.
-        nodes.append(
-            Node(
-                package='rtabmap_odom', executable='icp_odometry', output='screen',
-                parameters=[shared_parameters, icp_odometry_parameters],
-                remappings=remappings + [('scan_cloud', lidar_topic_deskewed)]))
-
-    if fixed_frame_from_imu:
-        # Create a stabilized base frame from IMU for lidar deskewing
-        # (only when no external odom).
-        nodes.append(
-            Node(
-                package='rtabmap_util', executable='imu_to_tf', output='screen',
-                parameters=[{
-                    'use_sim_time': use_sim_time,
-                    'fixed_frame_id': fixed_frame_id,
-                    'base_frame_id': frame_id,
-                    'wait_for_transform_duration': 0.001,
-                }],
-                remappings=[('imu/data', imu_topic)]))
-
     if rtabmap_ns:
         return [
             GroupAction(
@@ -398,13 +393,25 @@ def generate_launch_description():
             'map_registration_source',
             default_value='lidar',
             description='SLAM sensor mix: "lidar" = deskew + assemble LiDAR (+ optional rgbd_sync visual). '
-                        '"zed" = RGB-D-only (like rtabmap_examples/zed.launch.py but with go2_bridge odom; '
-                        'no rgbd_odometry / no LiDAR assembler).'),
+                        '"zed" = RGB-D-only (visual loop closure + mapping from ZED; '
+                        'no LiDAR assembler).'),
+
+        DeclareLaunchArgument(
+            'odom_source',
+            default_value='rgbd',
+            description='Odometry source: "rgbd" = rtabmap rgbd_odometry on synced ZED RGB-D (default). '
+                        '"zed" = ZED SDK positional tracking on zed_odom_topic, rebased to base_link '
+                        'with startup z from /go2/odom_seed. Keep phase1 zed_publish_odom_tf:=false.'),
+
+        DeclareLaunchArgument(
+            'zed_odom_topic',
+            default_value='/zed/zed_node/odom',
+            description='ZED positional-tracking odometry topic when odom_source:=zed.'),
 
         DeclareLaunchArgument(
             'rgbd_sync',
             default_value='true',
-            description='Run rtabmap_sync/rgbd_sync for ZED inputs. Forced on when map_registration_source:=zed '
+            description='Retained for compatibility; this launch always runs rtabmap_sync/rgbd_sync for ZED odometry '
                         '(use zed_*_topic for paths; defaults match zed_wrapper rgb/color/rect + depth_registered).'),
 
         DeclareLaunchArgument(
@@ -423,14 +430,11 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'fixed_frame_id', default_value='',
             description='Fixed frame used for lidar deskewing. If empty, falls back to '
-                        'external_odom_frame_id (preferred) or "<frame_id>_stabilized" '
-                        '(when icp_odometry is run).'),
+                        'odom_frame_id (preferred).'),
 
         DeclareLaunchArgument(
-            'external_odom_frame_id', default_value='odom',
-            description='External odometry frame (e.g. published by go2_bridge as '
-                        '`odom -> base_link`). When non-empty, icp_odometry is NOT '
-                        'launched and rtabmap publishes `map -> <external_odom_frame_id>`.'),
+            'odom_frame_id', default_value='odom',
+            description='Odometry frame published by rebased odometry and consumed by RTAB-Map.'),
 
         DeclareLaunchArgument(
             'localization', default_value='false',
@@ -450,8 +454,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'imu_topic', default_value='/go2/imu',
-            description='IMU topic (published by go2_bridge in `base_link`). Only used '
-                        'when external_odom_frame_id is empty (icp_odometry / imu_to_tf).'),
+            description='IMU topic (published by go2_bridge in `base_link`). Kept available for future odometry tuning.'),
 
         DeclareLaunchArgument(
             'gps_topic', default_value='/gps/fix',
@@ -493,18 +496,16 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'odom_sensor_sync',
-            default_value='auto',
+            default_value='false',
             description='Passed to slam + rtabmap_viz. '
-                        '`auto`=off when RGB-D is used alongside external_odom TF (recommended for '
-                        'go2_bridge stamped `now()` + ZED timestamps). Override true/false to force.',
+                        'Default false because odometry is generated from the same RGB-D stream. Override true to force.',
         ),
 
         DeclareLaunchArgument(
             'rtabmap_viz_max_odom_update_rate',
             default_value='auto',
             description='Maximum odometry/visualization rate for rtabmap_viz (Hz); 0 = unlimited. '
-                        '`auto` uses 0 when RGB-D + external_odom TF (otherwise viz throttled frames '
-                        'expect rgbd_odometry OdomInfo, which this launch does not run).'),
+                        '`auto` uses 0 when RGB-D odometry is active.'),
 
         DeclareLaunchArgument(
             'voxel_size', default_value='0.2',
@@ -517,7 +518,7 @@ def generate_launch_description():
 
         DeclareLaunchArgument(
             'expected_update_rate', default_value='15.0',
-            description='Expected lidar frame rate (only used by icp_odometry).'),
+            description='Retained for compatibility; not used by the ZED RGB-D odometry pipeline.'),
 
         DeclareLaunchArgument(
             'assembling_time', default_value='0.2',

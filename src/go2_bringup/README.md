@@ -40,16 +40,21 @@ go2_bringup/
 source ~/go2_ws/setup_env.bash
 
 # Phase 1: go2_description (RSP) + go2_bridge + foxglove_bridge (Foxglove Studio on ws://127.0.0.1:8765)
+# Defaults keep Go2 odometry disabled so SLAM can own odom -> base_link later.
 ros2 launch go2_bringup phase1.launch.py
 
 # With RViz fixed frame map before SLAM (static identity map→odom placeholder):
 # ros2 launch go2_bringup phase1.launch.py map_odom_identity_tf:=true
+
+# Re-enable raw Go2 odometry / TF only for debugging:
+# ros2 launch go2_bringup phase1.launch.py publish_go2_odom_topic:=true publish_go2_odom_tf:=true
 
 # RViz instead of Foxglove, or bridge only:
 # ros2 launch go2_bringup phase1.launch.py foxglove:=false rviz:=true
 # ros2 launch go2_bringup foxglove_bridge.launch.py
 
 # DDS bridge only (e.g. with description launched elsewhere)
+# bridge.launch.py still defaults to publishing Go2 odometry unless you override it.
 ros2 launch go2_bringup bridge.launch.py
 
 # Full stack (placeholder)
